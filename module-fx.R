@@ -18,6 +18,7 @@ init_covid <- function(x, param, init, control, s) {
 
   dat$attr <- list()
   dat$stats <- list()
+  dat$stats$nwstats <- list()
   dat$temp <- list()
 
   ## Network Setup ##
@@ -52,6 +53,11 @@ init_covid <- function(x, param, init, control, s) {
   ## Get initial prevalence
   dat <- prevalence_covid(dat, at = 1)
 
+  # Network stats
+  if (dat$control$save.nwstats == TRUE) {
+    dat <- calc_nwstats_covid(dat, at = 1)
+  }
+
   return(dat)
 }
 
@@ -85,7 +91,6 @@ init_status_covid <- function(dat) {
 }
 
 
-
 # New Network Resimulation Module -----------------------------------------
 
 resim_nets_covid <- function(dat, at) {
@@ -97,8 +102,8 @@ resim_nets_covid <- function(dat, at) {
   nwparam1 <- EpiModel::get_nwparam(dat, network = 1)
   dat <- tergmLite::updateModelTermInputs(dat, network = 1)
 
-  dat$el[[1]] <- tergmLite::simulate_ergm(p = dat$p[[3]],
-                                          el = dat$el[[3]],
+  dat$el[[1]] <- tergmLite::simulate_ergm(p = dat$p[[1]],
+                                          el = dat$el[[1]],
                                           coef = nwparam1$coef.form)
 
 
@@ -106,8 +111,7 @@ resim_nets_covid <- function(dat, at) {
   nwparam2 <- EpiModel::get_nwparam(dat, network = 2)
   dat <- tergmLite::updateModelTermInputs(dat, network = 2)
 
-  dat$el[[2]] <- tergmLite::simulate_ergm(p = dat$p[[3]],
-                                          el = dat$el[[3]],
+                                          el = dat$el[[2]],
                                           coef = nwparam2$coef.form)
 
   if (dat$control$save.nwstats == TRUE) {
@@ -136,7 +140,7 @@ edges_correct_covid <- function(dat, at) {
 
 calc_nwstats_covid <- function(dat, at) {
 
-  for (nw in 1:3) {
+  for (nw in 1:2) {
     n <- attr(dat$el[[nw]], "n")
     edges <- nrow(dat$el[[nw]])
     meandeg <- round(edges * (2/n), 3)
@@ -157,9 +161,6 @@ calc_nwstats_covid <- function(dat, at) {
 # Replacement infection/transmission module -------------------------------
 
 infect_covid <- function(dat, at) {
-
-  ## Uncomment this to function environment interactively
-  # browser()
 
   ## Attributes ##
   active <- dat$attr$active
@@ -220,9 +221,6 @@ infect_covid <- function(dat, at) {
 # (Replaces the recovery module)
 
 progress_covid <- function(dat, at) {
-
-  ## Uncomment this to function environment interactively
-  # browser()
 
   ## Attributes ##
   active <- dat$attr$active

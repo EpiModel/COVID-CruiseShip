@@ -112,6 +112,13 @@ control <- control.net(nsteps = 30,
                        recovery.FUN = NULL)
 
 dat <- init_covid(est, param, init, control, s = 1)
+at <- 2
+dat <- resim_nets_covid(dat, at)
+dat <- infect_covid(dat, at)
+dat <- progress_covid(dat, at)
+dat <- prevalence_covid(dat, at)
+
+
 
 
 # Run the network model simulation with netsim
