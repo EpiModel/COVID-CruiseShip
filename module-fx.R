@@ -111,6 +111,7 @@ resim_nets_covid <- function(dat, at) {
   nwparam2 <- EpiModel::get_nwparam(dat, network = 2)
   dat <- tergmLite::updateModelTermInputs(dat, network = 2)
 
+  dat$el[[2]] <- tergmLite::simulate_ergm(p = dat$p[[2]],
                                           el = dat$el[[2]],
                                           coef = nwparam2$coef.form)
 
@@ -176,45 +177,95 @@ infect_covid <- function(dat, at) {
   nElig <- length(idsInf)
 
   ## Initialize default incidence at 0 ##
-  nInf <- 0
+  nInf1 <- nInf2 <- 0
 
-  ## If any infected nodes, proceed with transmission ##
-  if (nElig > 0 && nElig < nActive) {
+  if (length(idsInf) > 0) {
 
     ## Look up discordant edgelist ##
-    del <- discord_edgelist(dat, at)
+    del1 <- discord_edgelist_covid(dat, nw = 1)
 
     ## If any discordant pairs, proceed ##
-    if (!(is.null(del))) {
+    if (!(is.null(del1))) {
 
       # Set parameters on discordant edgelist data frame
-      del$transProb <- inf.prob
-      del$actRate <- act.rate
-      del$finalProb <- 1 - (1 - del$transProb)^del$actRate
+      del1$transProb <- inf.prob
+      del1$actRate <- act.rate
+      del1$finalProb <- 1 - (1 - del1$transProb)^del1$actRate
 
       # Stochastic transmission process
-      transmit <- rbinom(nrow(del), 1, del$finalProb)
+      transmit <- rbinom(nrow(del1), 1, del1$finalProb)
 
       # Keep rows where transmission occurred
-      del <- del[which(transmit == 1), ]
+      del1 <- del1[which(transmit == 1), ]
 
       # Look up new ids if any transmissions occurred
-      idsNewInf <- unique(del$sus)
-      nInf <- length(idsNewInf)
+      idsNewInf1 <- unique(del1$sus)
+      nInf1 <- length(idsNewInf1)
 
       # Set new attributes for those newly infected
-      if (nInf > 0) {
-        dat$attr$status[idsNewInf] <- "e"
-        dat$attr$infTime[idsNewInf] <- at
+      if (nInf1 > 0) {
+        dat$attr$status[idsNewInf1] <- "e"
+        dat$attr$infTime[idsNewInf1] <- at
       }
     }
+
+    del2 <- discord_edgelist_covid(dat, nw = 2)
+    if (!(is.null(del2))) {
+
+      # Set parameters on discordant edgelist data frame
+      del2$transProb <- inf.prob
+      del2$actRate <- act.rate
+      del2$finalProb <- 1 - (1 - del2$transProb)^del2$actRate
+
+      # Stochastic transmission process
+      transmit <- rbinom(nrow(del2), 1, del2$finalProb)
+
+      # Keep rows where transmission occurred
+      del2 <- del2[which(transmit == 1), ]
+
+      # Look up new ids if any transmissions occurred
+      idsNewInf2 <- unique(del2$sus)
+      nInf2 <- length(idsNewInf2)
+
+      # Set new attributes for those newly infected
+      if (nInf2 > 0) {
+        dat$attr$status[idsNewInf2] <- "e"
+        dat$attr$infTime[idsNewInf2] <- at
+      }
+    }
+
   }
 
   ## Save summary statistic for S->E flow
-  dat$epi$se.flow[at] <- nInf
+  dat$epi$se.flow[at] <- nInf1 + nInf2
 
   return(dat)
 }
+
+discord_edgelist_covid <- function(dat, nw = 1) {
+
+  status <- dat$attr$status
+  el <- dat$el[[nw]]
+
+  del <- NULL
+  if (nrow(el) > 0) {
+    el <- el[sample(1:nrow(el)), , drop = FALSE]
+    stat <- matrix(status[el], ncol = 2)
+    isInf <- matrix(stat %in% "i", ncol = 2)
+    isSus <- matrix(stat %in% "s", ncol = 2)
+    SIpairs <- el[isSus[, 1] * isInf[, 2] == 1, , drop = FALSE]
+    ISpairs <- el[isSus[, 2] * isInf[, 1] == 1, , drop = FALSE]
+    pairs <- rbind(SIpairs, ISpairs[, 2:1])
+    if (nrow(pairs) > 0) {
+      sus <- pairs[, 1]
+      inf <- pairs[, 2]
+      del <- data.frame(sus, inf)
+    }
+  }
+
+  return(del)
+}
+
 
 
 # New disease progression module ------------------------------------------
@@ -264,8 +315,7 @@ progress_covid <- function(dat, at) {
   ## Save summary statistics ##
   dat$epi$ei.flow[at] <- nInf
   dat$epi$ir.flow[at] <- nRec
-  dat$epi$e.num[at] <- sum(active == 1 & status == "e")
-  dat$epi$r.num[at] <- sum(active == 1 & status == "r")
+
 
   return(dat)
 }
@@ -280,7 +330,7 @@ prevalence_covid <- function(dat, at) {
   status <- dat$attr$status
   nsteps <- dat$control$nsteps
 
-  var.names <- c("num", "i.num")
+  var.names <- c("num", "i.num", "se.flow", "ei.flow", "ir.flow", "e.num", "r.num")
   if (at == 1) {
     for (i in 1:length(var.names)) {
       dat$epi[[var.names[i]]] <- rep(NA, nsteps)
@@ -288,8 +338,10 @@ prevalence_covid <- function(dat, at) {
   }
 
   # Pop Size / Demog
-  dat$epi$num[at] <- sum(active == 1, na.rm = TRUE)
-  dat$epi$i.num[at] <- sum(status == 1, na.rm = TRUE)
+  dat$epi$num[at] <- sum(active == 1)
+  dat$epi$i.num[at] <- sum(active == 1 & status == "i")
+  dat$epi$e.num[at] <- sum(active == 1 & status == "e")
+  dat$epi$r.num[at] <- sum(active == 1 & status == "r")
 
   return(dat)
 }
