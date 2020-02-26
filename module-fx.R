@@ -6,10 +6,136 @@
 ## Date: February 2020
 ##
 
+# New Initialization Module -----------------------------------------------
+
+init_covid <- function(x, param, init, control, s) {
+
+  browser()
+
+  # Master Data List
+  dat <- list()
+  dat$param <- param
+  dat$init <- init
+  dat$control <- control
+
+  dat$attr <- list()
+  dat$stats <- list()
+  dat$temp <- list()
+
+  ## Network Setup ##
+  # Initial network simulations
+  dat$nw <- list()
+  for (i in 1:2) {
+  }
+  nw <- dat$nw
+
+  # Pull Network parameters
+  dat$nwparam <- list()
+  for (i in 1:2) {
+    dat$nwparam[i] <- list(x[[i]][-which(names(x[[i]]) == "fit")])
+  }
+
+  # Convert to tergmLite method
+  dat <- init_tergmLite(dat)
+
+  ## Nodal Attributes Setup ##
+  dat$attr <- param$netstats$attr
+
+  num <- network.size(nw[[1]])
+  dat$attr$active <- rep(1, num)
+  dat$attr$arrival.time <- rep(1, num)
+  dat$attr$uid <- 1:num
+
+  # Initialization
+
+  ## Pull network val to attr
+  stop()
+
+  ## Store current proportions of attr
+  dat$temp$fterms <- fterms
+  dat$temp$t1.tab <- get_attr_prop(dat$nw, fterms)
+
+  ## Infection Status and Time Modules
+  dat <- init_status.net(dat)
+
+  ## Get initial prevalence
+  dat <- get_prev.net(dat, at = 1)
+
+  return(dat)
+}
+
+
+# New Network Resimulation Module -----------------------------------------
+
+resim_nets_covid <- function(dat, at) {
+
+  ## Edges correction
+  dat <- edges_correct_covid(dat, at)
+
+  ## pass/pass network
+  nwparam1 <- EpiModel::get_nwparam(dat, network = 1)
+  dat <- tergmLite::updateModelTermInputs(dat, network = 1)
+
+  dat$el[[1]] <- tergmLite::simulate_ergm(p = dat$p[[3]],
+                                          el = dat$el[[3]],
+                                          coef = nwparam1$coef.form)
+
+
+  ## other network
+  nwparam2 <- EpiModel::get_nwparam(dat, network = 2)
+  dat <- tergmLite::updateModelTermInputs(dat, network = 2)
+
+  dat$el[[2]] <- tergmLite::simulate_ergm(p = dat$p[[3]],
+                                          el = dat$el[[3]],
+                                          coef = nwparam2$coef.form)
+
+  if (dat$control$save.nwstats == TRUE) {
+    dat <- calc_nwstats_covid(dat, at)
+  }
+
+  return(dat)
+}
+
+edges_correct_covid <- function(dat, at) {
+
+  old.num <- dat$epi$num[at - 1]
+  new.num <- sum(dat$attr$active == 1, na.rm = TRUE)
+  adjust <- log(old.num) - log(new.num)
+
+  coef.form1 <- get_nwparam(dat, network = 1)$coef.form
+  coef.form1[1] <- coef.form1[1] + adjust
+  dat$nwparam[[1]]$coef.form <- coef.form1
+
+  coef.form2 <- get_nwparam(dat, network = 2)$coef.form
+  coef.form2[1] <- coef.form2[1] + adjust
+  dat$nwparam[[2]]$coef.form <- coef.form2
+
+  return(dat)
+}
+
+calc_nwstats_covid <- function(dat, at) {
+
+  for (nw in 1:3) {
+    n <- attr(dat$el[[nw]], "n")
+    edges <- nrow(dat$el[[nw]])
+    meandeg <- round(edges * (2/n), 3)
+    concurrent <- round(mean(get_degree(dat$el[[nw]]) > 1), 3)
+    mat <- matrix(c(edges, meandeg, concurrent), ncol = 3, nrow = 1)
+    if (at == 1) {
+      dat$stats$nwstats[[nw]] <- mat
+      colnames(dat$stats$nwstats[[nw]]) <- c("edges", "mdeg", "conc")
+    }
+    if (at > 1) {
+      dat$stats$nwstats[[nw]] <- rbind(dat$stats$nwstats[[nw]], mat)
+    }
+  }
+
+  return(dat)
+}
 
 # Replacement infection/transmission module -------------------------------
 
-infect <- function(dat, at) {
+infect_covid <- function(dat, at) {
 
   ## Uncomment this to function environment interactively
   # browser()
@@ -72,7 +198,7 @@ infect <- function(dat, at) {
 # New disease progression module ------------------------------------------
 # (Replaces the recovery module)
 
-progress <- function(dat, at) {
+progress_covid <- function(dat, at) {
 
   ## Uncomment this to function environment interactively
   # browser()
