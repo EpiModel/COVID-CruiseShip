@@ -69,7 +69,7 @@ print(dx)
 cc <- 2*n.crew/2
 
 # crew/pass contacts
-cp <- 3*2*n/2
+cp <- 3*2*n.rooms*2/2
 
 # pass/pass contacts
 pp <- 0
