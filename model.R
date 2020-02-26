@@ -51,13 +51,14 @@ coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 coef.diss
 
 # Fit the model
-est <- netest(nw, formation, target.stats, coef.diss,
+est1 <- netest(nw, formation, target.stats, coef.diss,
               set.control.ergm = control.ergm(MCMLE.maxit = 500))
 
 # Model diagnostics
-dx <- netdx(est, nsims = 10000, dynamic = FALSE,
-            nwstats.formula = ~edges + nodematch("pass.room") + nodefactor("type", levels = NULL))
-print(dx)
+dx1 <- netdx(est1, nsims = 10000, dynamic = FALSE,
+             nwstats.formula = ~edges + nodematch("pass.room") +
+                     nodefactor("type", levels = NULL))
+print(dx1)
 
 
 ## Model 2: crew/pass and crew/crew contacts each day
@@ -85,6 +86,9 @@ dx2 <- netdx(est2, nsims = 10000, dynamic = FALSE,
 print(dx2)
 
 
+est <- list(est1, est2)
+saveRDS(est, file = "est/est.covid.rds")
+
 
 # Epidemic model simulation -----------------------------------------------
 
@@ -99,12 +103,15 @@ init <- init.net(i.num = 10)
 source("module-fx.R")
 
 # Control settings
-control <- control.net(nsteps = nsteps,
-                       nsims = nsims,
-                       ncores = ncores,
-                       infection.FUN = infect,
-                       progress.FUN = progress,
+control <- control.net(nsteps = 30,
+                       nsims = 1,
+                       ncores = 1,
+                       infection.FUN = infect_covid,
+                       progress.FUN = progress_covid,
                        recovery.FUN = NULL)
+
+dat <- init_covid(est, param, init, control, s = 1)
+
 
 # Run the network model simulation with netsim
 sim <- netsim(est, param, init, control)

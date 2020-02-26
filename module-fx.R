@@ -10,8 +10,6 @@
 
 init_covid <- function(x, param, init, control, s) {
 
-  browser()
-
   # Master Data List
   dat <- list()
   dat$param <- param
@@ -26,6 +24,7 @@ init_covid <- function(x, param, init, control, s) {
   # Initial network simulations
   dat$nw <- list()
   for (i in 1:2) {
+    dat$nw[[i]] <- simulate(x[[i]]$fit, basis = x[[i]]$fit$newnetwork)
   }
   nw <- dat$nw
 
@@ -35,34 +34,56 @@ init_covid <- function(x, param, init, control, s) {
     dat$nwparam[i] <- list(x[[i]][-which(names(x[[i]]) == "fit")])
   }
 
-  # Convert to tergmLite method
-  dat <- init_tergmLite(dat)
-
   ## Nodal Attributes Setup ##
-  dat$attr <- param$netstats$attr
-
   num <- network.size(nw[[1]])
   dat$attr$active <- rep(1, num)
   dat$attr$arrival.time <- rep(1, num)
   dat$attr$uid <- 1:num
 
-  # Initialization
+  dat$attr$pass.room <- get.vertex.attribute(nw[[1]], "pass.room")
+  dat$attr$type <- get.vertex.attribute(nw[[1]], "type")
 
-  ## Pull network val to attr
-  stop()
-
-  ## Store current proportions of attr
-  dat$temp$fterms <- fterms
-  dat$temp$t1.tab <- get_attr_prop(dat$nw, fterms)
+  # Convert to tergmLite method
+  dat <- init_tergmLite(dat)
 
   ## Infection Status and Time Modules
-  dat <- init_status.net(dat)
+  dat <- init_status_covid(dat)
 
   ## Get initial prevalence
-  dat <- get_prev.net(dat, at = 1)
+  dat <- prevalence_covid(dat, at = 1)
 
   return(dat)
 }
+
+init_status_covid <- function(dat) {
+
+  i.num <- dat$init$i.num
+
+  active <- dat$attr$active
+  num <- sum(dat$attr$active)
+
+  ## Status passed on input network
+  status <- rep(0, num)
+  status[sample(which(active == 1), size = i.num)] <- 1
+  dat$attr$status <- status
+
+  ## Save out other attr
+  dat$attr$active <- rep(1, length(status))
+  dat$attr$entrTime <- rep(1, length(status))
+  dat$attr$exitTime <- rep(NA, length(status))
+
+
+  # Infection Time ----------------------------------------------------------
+  ## Set up inf.time vector
+  idsInf <- which(status == 1)
+  infTime <- rep(NA, length(status))
+  infTime[idsInf] <- -rgeom(n = length(idsInf), prob = mean(dat$param$ir.rate)) + 2
+
+  dat$attr$infTime <- infTime
+
+  return(dat)
+}
+
 
 
 # New Network Resimulation Module -----------------------------------------
@@ -251,3 +272,26 @@ progress_covid <- function(dat, at) {
   return(dat)
 }
 
+
+
+# Prevalence module -------------------------------------------------------
+
+prevalence_covid <- function(dat, at) {
+
+  active <- dat$attr$active
+  status <- dat$attr$status
+  nsteps <- dat$control$nsteps
+
+  var.names <- c("num", "i.num")
+  if (at == 1) {
+    for (i in 1:length(var.names)) {
+      dat$epi[[var.names[i]]] <- rep(NA, nsteps)
+    }
+  }
+
+  # Pop Size / Demog
+  dat$epi$num[at] <- sum(active == 1, na.rm = TRUE)
+  dat$epi$i.num[at] <- sum(status == 1, na.rm = TRUE)
+
+  return(dat)
+}
