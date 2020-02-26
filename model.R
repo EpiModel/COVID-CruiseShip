@@ -8,6 +8,7 @@
 
 ## Load EpiModel
 suppressMessages(library(EpiModel))
+library("tergmLite")
 
 
 # Network model estimation ------------------------------------------------
@@ -97,7 +98,7 @@ param <- param.net(inf.prob = 0.5, act.rate = 1,
                    ei.rate = 1/5.2, ir.rate = 1/7)
 
 # Initial conditions
-init <- init.net(i.num = 10)
+init <- init.net(e.num = 10)
 
 # Read in the module functions
 source("module-fx.R")

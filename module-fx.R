@@ -57,14 +57,14 @@ init_covid <- function(x, param, init, control, s) {
 
 init_status_covid <- function(dat) {
 
-  i.num <- dat$init$i.num
+  e.num <- dat$init$e.num
 
   active <- dat$attr$active
   num <- sum(dat$attr$active)
 
-  ## Status passed on input network
-  status <- rep(0, num)
-  status[sample(which(active == 1), size = i.num)] <- 1
+  ## Disease status
+  status <- rep("s", num)
+  status[sample(which(active == 1), size = e.num)] <- "e"
   dat$attr$status <- status
 
   ## Save out other attr
@@ -73,11 +73,11 @@ init_status_covid <- function(dat) {
   dat$attr$exitTime <- rep(NA, length(status))
 
 
-  # Infection Time ----------------------------------------------------------
+  # Infection Time
   ## Set up inf.time vector
-  idsInf <- which(status == 1)
+  idsInf <- which(status == "e")
   infTime <- rep(NA, length(status))
-  infTime[idsInf] <- -rgeom(n = length(idsInf), prob = mean(dat$param$ir.rate)) + 2
+  infTime[idsInf] <- -rgeom(n = length(idsInf), prob = mean(dat$param$ei.rate)) + 2
 
   dat$attr$infTime <- infTime
 
