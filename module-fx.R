@@ -1,10 +1,9 @@
 
 ##
-## SEIR Model: Adding an Exposed State to an SIR
-## EpiModel Gallery (https://github.com/statnet/EpiModel-Gallery)
+## COVID-19 Cruise Ship Network Model
 ##
 ## Authors: Samuel M. Jenness
-## Date: August 2018
+## Date: February 2020
 ##
 
 
@@ -126,76 +125,3 @@ progress <- function(dat, at) {
   return(dat)
 }
 
-
-
-# Extension #1: Adding an R --> S Transition (SEIRS) ----------------------
-
-progress2 <- function(dat, at) {
-
-  ## Uncomment this to function environment interactively
-  # browser()
-
-  ## Attributes ##
-  active <- dat$attr$active
-  status <- dat$attr$status
-
-  ## Parameters ##
-  ei.rate <- dat$param$ei.rate
-  ir.rate <- dat$param$ir.rate
-  rs.rate <- dat$param$rs.rate
-
-  ## E to I progression process ##
-  nInf <- 0
-  idsEligInf <- which(active == 1 & status == "e")
-  nEligInf <- length(idsEligInf)
-
-  if (nEligInf > 0) {
-    vecInf <- which(rbinom(nEligInf, 1, ei.rate) == 1)
-    if (length(vecInf) > 0) {
-      idsInf <- idsEligInf[vecInf]
-      nInf <- length(idsInf)
-      status[idsInf] <- "i"
-    }
-  }
-
-  ## I to R progression process ##
-  nRec <- 0
-  idsEligRec <- which(active == 1 & status == "i")
-  nEligRec <- length(idsEligRec)
-
-  if (nEligRec > 0) {
-    vecRec <- which(rbinom(nEligRec, 1, ir.rate) == 1)
-    if (length(vecRec) > 0) {
-      idsRec <- idsEligRec[vecRec]
-      nRec <- length(idsRec)
-      status[idsRec] <- "r"
-    }
-  }
-
-  # ## R to S progression process ##
-  nSus <- 0
-  idsEligSus <- which(active == 1 & status == "r")
-  nEligSus <- length(idsEligSus)
-
-  if (nEligSus > 0) {
-    vecSus <- which(rbinom(nEligSus, 1, rs.rate) == 1)
-    if (length(vecSus) > 0) {
-      idsSus <- idsEligSus[vecSus]
-      nSus <- length(idsSus)
-      status[idsSus] <- "s"
-    }
-  }
-
-  ## Write out updated status attribute ##
-  dat$attr$status <- status
-
-  ## Save summary statistics ##
-  dat$epi$ei.flow[at] <- nInf
-  dat$epi$ir.flow[at] <- nRec
-  dat$epi$rs.flow[at] <- nSus
-  dat$epi$e.num[at] <- sum(active == 1 & status == "e")
-  dat$epi$r.num[at] <- sum(active == 1 & status == "r")
-  dat$epi$s.num[at] <- sum(active == 1 & status == "s")
-
-  return(dat)
-}

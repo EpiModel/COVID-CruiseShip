@@ -68,7 +68,7 @@ print(dx)
 # crew/crew contacts
 cc <- 2*n.crew/2
 
-# crew/pass contacts
+# crew/pass contacts: 3 times a day x 2 workers x each room x average 2 people per room
 cp <- 3*2*n.rooms*2/2
 
 # pass/pass contacts
