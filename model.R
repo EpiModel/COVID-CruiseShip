@@ -104,24 +104,20 @@ init <- init.net(e.num = 10)
 source("module-fx.R")
 
 # Control settings
-control <- control.net(nsteps = 30,
-                       nsims = 1,
-                       ncores = 1,
+control <- control.net(nsteps = 100,
+                       nsims = 25,
+                       ncores = 5,
+                       initialize.FUN = init_covid,
+                       departures.FUN = NULL,
+                       arrivals.FUN = NULL,
+                       edges_correct.FUN = NULL,
+                       resim_nets.FUN = resim_nets_covid,
                        infection.FUN = infect_covid,
-                       progress.FUN = progress_covid,
-                       recovery.FUN = NULL)
+                       recovery.FUN = progress_covid,
+                       get_prev.FUN = prevalence_covid,
+                       depend = TRUE,
+                       skip.check = TRUE)
 
-dat <- init_covid(est, param, init, control, s = 1)
-at <- 2
-dat <- resim_nets_covid(dat, at)
-dat <- infect_covid(dat, at)
-dat <- progress_covid(dat, at)
-dat <- prevalence_covid(dat, at)
-
-
-
-
-# Run the network model simulation with netsim
 sim <- netsim(est, param, init, control)
 print(sim)
 
@@ -135,8 +131,15 @@ plot(sim,
 plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
      mean.col = 1:4, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = 1:4, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     ylim = c(0, 3), legend = TRUE)
+     legend = TRUE)
 
-# Average across simulations at beginning, middle, end
-df <- as.data.frame(sim)
-df[c(2, 100, 500), ]
+
+
+# Testing
+# dat <- init_covid(est, param, init, control, s = 1)
+# for (at in 2:250) {
+#   dat <- resim_nets_covid(dat, at)
+#   dat <- infect_covid(dat, at)
+#   dat <- progress_covid(dat, at)
+#   dat <- prevalence_covid(dat, at)
+# }
