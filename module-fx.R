@@ -103,9 +103,11 @@ resim_nets_covid <- function(dat, at) {
   nwparam1 <- EpiModel::get_nwparam(dat, network = 1)
   dat <- tergmLite::updateModelTermInputs(dat, network = 1)
 
-  dat$el[[1]] <- tergmLite::simulate_ergm(p = dat$p[[1]],
-                                          el = dat$el[[1]],
-                                          coef = nwparam1$coef.form)
+  dat$el[[1]] <- tergmLite::simulate_network(p = dat$p[[1]],
+                                             el = dat$el[[1]],
+                                             coef.form = nwparam1$coef.form,
+                                             coef.diss = nwparam1$coef.diss$coef.adj,
+                                             save.changes = FALSE)
 
 
   ## other network
