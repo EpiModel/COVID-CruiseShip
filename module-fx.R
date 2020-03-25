@@ -335,19 +335,82 @@ prevalence_covid <- function(dat, at) {
   status <- dat$attr$status
   nsteps <- dat$control$nsteps
 
-  var.names <- c("num", "s.num", "e.num", "i.num", "r.num", "se.flow", "ei.flow", "ir.flow")
+  # Initialize Outputs
+  var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
+                 "se.flow", "ei.flow", "ir.flow", "d.flow",
+                 "meanAge")
   if (at == 1) {
     for (i in 1:length(var.names)) {
-      dat$epi[[var.names[i]]] <- rep(NA, nsteps)
+      dat$epi[[var.names[i]]] <- rep(0, nsteps)
     }
   }
 
-  # Pop Size / Demog
+  # Update Outputs
   dat$epi$num[at] <- sum(active == 1)
+
   dat$epi$s.num[at] <- sum(active == 1 & status == "s")
   dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
+
+  dat$epi$meanAge[at] <- mean(dat$attr$age, na.rm = TRUE)
+
+  return(dat)
+}
+
+
+# Aging Module ------------------------------------------------------------
+
+aging_covid <- function(dat, at) {
+
+  dat$attr$age <- dat$attr$age + 1/365
+
+  return(dat)
+}
+
+
+# Mortality Module --------------------------------------------------------
+
+dfunc_covid <- function(dat, at) {
+
+  ## Attributes ##
+  active <- dat$attr$active
+  age <- dat$attr$age
+  status <- dat$attr$status
+
+  ## Parameters ##
+  mort.rates <- dat$param$mort.rates
+  mort.dis.mult <- dat$param$mort.dis.mult
+
+  idsElig <- which(active == 1)
+  nElig <- length(idsElig)
+  nDeaths <- 0
+
+  if (nElig > 0) {
+
+    whole_ages_of_elig <- pmin(ceiling(age[idsElig]), 86)
+    death_rates_of_elig <- mort.rates[whole_ages_of_elig]
+
+    idsElig.inf <- which(status[idsElig] == "i")
+    death_rates_of_elig[idsElig.inf] <- death_rates_of_elig[idsElig.inf] * mort.dis.mult
+
+    vecDeaths <- which(rbinom(nElig, 1, death_rates_of_elig) == 1)
+    idsDeaths <- idsElig[vecDeaths]
+    nDeaths <- length(idsDeaths)
+
+    if (nDeaths > 0) {
+      # browser()
+      dat$attr$active[idsDeaths] <- 0
+      inactive <- which(dat$attr$active == 0)
+      dat$attr <- deleteAttr(dat$attr, inactive)
+      for (i in 1:length(dat$el)) {
+        dat$el[[i]] <- delete_vertices(dat$el[[i]], inactive)
+      }
+    }
+  }
+
+  ## Summary statistics ##
+  dat$epi$d.flow[at] <- nDeaths
 
   return(dat)
 }
