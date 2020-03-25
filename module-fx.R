@@ -6,7 +6,8 @@
 ## Date: February 2020
 ##
 
-# New Initialization Module -----------------------------------------------
+
+# Initialization Module ---------------------------------------------------
 
 init_covid <- function(x, param, init, control, s) {
 
@@ -41,8 +42,12 @@ init_covid <- function(x, param, init, control, s) {
   dat$attr$arrival.time <- rep(1, num)
   dat$attr$uid <- 1:num
 
-  dat$attr$pass.room <- get.vertex.attribute(nw[[1]], "pass.room")
-  dat$attr$type <- get.vertex.attribute(nw[[1]], "type")
+  # Pull in attributes on network
+  nwattr.all <- names(nw[[1]][["val"]][[1]])
+  nwattr.use <- nwattr.all[!nwattr.all %in% c("na", "vertex.names")]
+  for (i in seq_along(nwattr.use)) {
+    dat$attr[[nwattr.use[i]]] <- get.vertex.attribute(nw[[1]], nwattr.use[i])
+  }
 
   # Convert to tergmLite method
   dat <- init_tergmLite(dat)
@@ -91,7 +96,7 @@ init_status_covid <- function(dat) {
 }
 
 
-# New Network Resimulation Module -----------------------------------------
+# Network Resimulation Module ---------------------------------------------
 
 resim_nets_covid <- function(dat, at) {
 
@@ -102,9 +107,11 @@ resim_nets_covid <- function(dat, at) {
   nwparam1 <- EpiModel::get_nwparam(dat, network = 1)
   dat <- tergmLite::updateModelTermInputs(dat, network = 1)
 
-  dat$el[[1]] <- tergmLite::simulate_ergm(p = dat$p[[1]],
-                                          el = dat$el[[1]],
-                                          coef = nwparam1$coef.form)
+  dat$el[[1]] <- tergmLite::simulate_network(p = dat$p[[1]],
+                                             el = dat$el[[1]],
+                                             coef.form = nwparam1$coef.form,
+                                             coef.diss = nwparam1$coef.diss$coef.adj,
+                                             save.changes = FALSE)
 
 
   ## other network
@@ -159,7 +166,8 @@ calc_nwstats_covid <- function(dat, at) {
   return(dat)
 }
 
-# Replacement infection/transmission module -------------------------------
+
+# Infection Module --------------------------------------------------------
 
 infect_covid <- function(dat, at) {
 
@@ -267,9 +275,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
 }
 
 
-
-# New disease progression module ------------------------------------------
-# (Replaces the recovery module)
+# Disease Progression Module ----------------------------------------------
 
 progress_covid <- function(dat, at) {
 
@@ -321,8 +327,7 @@ progress_covid <- function(dat, at) {
 }
 
 
-
-# Prevalence module -------------------------------------------------------
+# Prevalence Module -------------------------------------------------------
 
 prevalence_covid <- function(dat, at) {
 
@@ -330,18 +335,82 @@ prevalence_covid <- function(dat, at) {
   status <- dat$attr$status
   nsteps <- dat$control$nsteps
 
-  var.names <- c("num", "i.num", "se.flow", "ei.flow", "ir.flow", "e.num", "r.num")
+  # Initialize Outputs
+  var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
+                 "se.flow", "ei.flow", "ir.flow", "d.flow",
+                 "meanAge")
   if (at == 1) {
     for (i in 1:length(var.names)) {
-      dat$epi[[var.names[i]]] <- rep(NA, nsteps)
+      dat$epi[[var.names[i]]] <- rep(0, nsteps)
     }
   }
 
-  # Pop Size / Demog
+  # Update Outputs
   dat$epi$num[at] <- sum(active == 1)
+
+  dat$epi$s.num[at] <- sum(active == 1 & status == "s")
   dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
+
+  dat$epi$meanAge[at] <- mean(dat$attr$age, na.rm = TRUE)
+
+  return(dat)
+}
+
+
+# Aging Module ------------------------------------------------------------
+
+aging_covid <- function(dat, at) {
+
+  dat$attr$age <- dat$attr$age + 1/365
+
+  return(dat)
+}
+
+
+# Mortality Module --------------------------------------------------------
+
+dfunc_covid <- function(dat, at) {
+
+  ## Attributes ##
+  active <- dat$attr$active
+  age <- dat$attr$age
+  status <- dat$attr$status
+
+  ## Parameters ##
+  mort.rates <- dat$param$mort.rates
+  mort.dis.mult <- dat$param$mort.dis.mult
+
+  idsElig <- which(active == 1)
+  nElig <- length(idsElig)
+  nDeaths <- 0
+
+  if (nElig > 0) {
+
+    whole_ages_of_elig <- pmin(ceiling(age[idsElig]), 86)
+    death_rates_of_elig <- mort.rates[whole_ages_of_elig]
+
+    idsElig.inf <- which(status[idsElig] == "i")
+    death_rates_of_elig[idsElig.inf] <- death_rates_of_elig[idsElig.inf] * mort.dis.mult
+
+    vecDeaths <- which(rbinom(nElig, 1, death_rates_of_elig) == 1)
+    idsDeaths <- idsElig[vecDeaths]
+    nDeaths <- length(idsDeaths)
+
+    if (nDeaths > 0) {
+      # browser()
+      dat$attr$active[idsDeaths] <- 0
+      inactive <- which(dat$attr$active == 0)
+      dat$attr <- deleteAttr(dat$attr, inactive)
+      for (i in 1:length(dat$el)) {
+        dat$el[[i]] <- delete_vertices(dat$el[[i]], inactive)
+      }
+    }
+  }
+
+  ## Summary statistics ##
+  dat$epi$d.flow[at] <- nDeaths
 
   return(dat)
 }

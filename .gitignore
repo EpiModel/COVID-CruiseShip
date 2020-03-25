@@ -39,7 +39,6 @@ vignettes/*.pdf
 .Renviron
 *.Rproj
 .DS_Store
-*.rds
 
 *.docx
 *.xlsx
