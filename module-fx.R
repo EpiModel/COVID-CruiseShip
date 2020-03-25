@@ -331,7 +331,7 @@ prevalence_covid <- function(dat, at) {
   status <- dat$attr$status
   nsteps <- dat$control$nsteps
 
-  var.names <- c("num", "i.num", "se.flow", "ei.flow", "ir.flow", "e.num", "r.num")
+  var.names <- c("num", "s.num", "e.num", "i.num", "r.num", "se.flow", "ei.flow", "ir.flow")
   if (at == 1) {
     for (i in 1:length(var.names)) {
       dat$epi[[var.names[i]]] <- rep(NA, nsteps)
@@ -340,6 +340,7 @@ prevalence_covid <- function(dat, at) {
 
   # Pop Size / Demog
   dat$epi$num[at] <- sum(active == 1)
+  dat$epi$s.num[at] <- sum(active == 1 & status == "s")
   dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
