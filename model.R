@@ -7,8 +7,11 @@
 ##
 
 ## Load EpiModel
-suppressMessages(library(EpiModel))
+library("EpiModel")
 library("tergmLite")
+
+# Code works with this version of EpiModel
+packageVersion("EpiModel") == "1.8.0"
 
 
 # Network model estimation ------------------------------------------------
