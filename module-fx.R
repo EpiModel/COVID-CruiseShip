@@ -6,7 +6,8 @@
 ## Date: February 2020
 ##
 
-# New Initialization Module -----------------------------------------------
+
+# Initialization Module ---------------------------------------------------
 
 init_covid <- function(x, param, init, control, s) {
 
@@ -91,7 +92,7 @@ init_status_covid <- function(dat) {
 }
 
 
-# New Network Resimulation Module -----------------------------------------
+# Network Resimulation Module ---------------------------------------------
 
 resim_nets_covid <- function(dat, at) {
 
@@ -159,7 +160,8 @@ calc_nwstats_covid <- function(dat, at) {
   return(dat)
 }
 
-# Replacement infection/transmission module -------------------------------
+
+# Infection Module --------------------------------------------------------
 
 infect_covid <- function(dat, at) {
 
@@ -267,9 +269,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
 }
 
 
-
-# New disease progression module ------------------------------------------
-# (Replaces the recovery module)
+# Disease Progression Module ----------------------------------------------
 
 progress_covid <- function(dat, at) {
 
@@ -321,8 +321,7 @@ progress_covid <- function(dat, at) {
 }
 
 
-
-# Prevalence module -------------------------------------------------------
+# Prevalence Module -------------------------------------------------------
 
 prevalence_covid <- function(dat, at) {
 
