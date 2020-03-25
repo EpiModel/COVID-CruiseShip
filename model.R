@@ -14,6 +14,7 @@ library("tergmLite")
 packageVersion("EpiModel") == "1.8.0"
 
 
+
 # Network model estimation ------------------------------------------------
 
 n.crew <- 1045
@@ -32,11 +33,14 @@ table(room.ids.pass)
 
 type.attr <- rep(c("p", "c"), times = c(n.pass, n.crew))
 
+ages <- seq(30, 80, 1/365)
+age <- sample(ages, n, TRUE)
+
 # Initialize the network
 nw <- network.initialize(n, directed = FALSE)
 nw <- set.vertex.attribute(nw, "type", type.attr)
 nw <- set.vertex.attribute(nw, "pass.room", room.ids.pass, pass.ids)
-
+nw <- set.vertex.attribute(nw, "age", age)
 
 # Model 1: pass/pass contacts within rooms each day
 
@@ -109,14 +113,38 @@ est <- list(est1, est2)
 saveRDS(est, file = "est/est.covid.rds")
 
 
+
+# Other Parameter Estimation ----------------------------------------------
+
+# Mortality Rates
+# Rates per 100,000 for age groups: <1, 1-4, 5-9, 10-14, 15-19, 20-24, 25-29,
+#                                   30-34, 35-39, 40-44, 45-49, 50-54, 55-59,
+#                                   60-64, 65-69, 70-74, 75-79, 80-84, 85+
+# source: https://www.statista.com/statistics/241572/death-rate-by-age-and-sex-in-the-us/
+mortality_rate <- c(588.45, 24.8, 11.7, 14.55, 47.85, 88.2, 105.65, 127.2,
+                    154.3, 206.5, 309.3, 495.1, 736.85, 1051.15, 1483.45,
+                    2294.15, 3642.95, 6139.4, 13938.3)
+# rate per person, per day
+mr_pp_pd <- mortality_rate / 1e5 / 365
+
+# Build out a mortality rate vector
+age_spans <- c(1, 4, rep(5, 16), 1)
+mr_vec <- rep(mr_pp_pd, times = age_spans)
+data.frame(ages, mr_vec)
+
+
 # Epidemic model simulation -----------------------------------------------
 
 # Read in fitted network models
 est <- readRDS("est/est.covid.rds")
 
 # Model parameters
-param <- param.net(inf.prob = 0.5, act.rate = 1,
-                   ei.rate = 1/5.2, ir.rate = 1/7)
+param <- param.net(inf.prob = 0.5,
+                   act.rate = 1,
+                   ei.rate = 1/5.2,
+                   ir.rate = 1/7,
+                   mort.rates = mr_vec,
+                   mort.dis.mult = 100)
 
 # Initial conditions
 init <- init.net(e.num = 10)
@@ -126,16 +154,20 @@ source("module-fx.R", echo = FALSE)
 
 # Control settings
 control <- control.net(nsteps = 60,
-                       nsims = 24,
-                       ncores = 8,
+                       nsims = 7,
+                       ncores = 7,
                        initialize.FUN = init_covid,
-                       departures.FUN = NULL,
+                       aging.FUN = aging_covid,
+                       departures.FUN = dfunc_covid,
                        arrivals.FUN = NULL,
                        edges_correct.FUN = NULL,
                        resim_nets.FUN = resim_nets_covid,
                        infection.FUN = infect_covid,
                        recovery.FUN = progress_covid,
                        get_prev.FUN = prevalence_covid,
+                       module.order = c("aging.FUN", "departures.FUN",
+                                        "resim_nets.FUN", "infection.FUN",
+                                        "recovery.FUN", "get_prev.FUN"),
                        depend = TRUE,
                        skip.check = TRUE)
 
@@ -151,7 +183,10 @@ plot(sim,
      qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = FALSE,
      legend = TRUE)
 
-plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
+plot(sim, y = c("se.flow", "ei.flow", "ir.flow", "d.flow"),
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
+
+df <- as.data.frame(sim, out = "mean")
+df
