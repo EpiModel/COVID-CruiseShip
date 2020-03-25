@@ -51,19 +51,31 @@ edges <- n.pass * md/2
 target.stats <- c(edges, edges, 0)
 
 # Parameterize the dissolution model
-coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 25000)
 coef.diss
 
 # Fit the model
 est1 <- netest(nw, formation, target.stats, coef.diss,
               set.control.ergm = control.ergm(MCMLE.maxit = 500))
+summary(est1)
 
 # Model diagnostics
 dx1 <- netdx(est1, nsims = 10000, dynamic = FALSE,
              nwstats.formula = ~edges + nodematch("pass.room") +
                      nodefactor("type", levels = NULL))
 print(dx1)
+plot(dx1, sim.lines = TRUE)
 
+dx2 <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
+             nwstats.formula = ~edges + nodematch("pass.room") +
+                     nodefactor("type", levels = NULL))
+print(dx2)
+plot(dx2)
+
+dx3 <- netdx(est1, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
+             keep.tnetwork = TRUE)
+dx3
+as.data.frame(get_network(dx3))
 
 ## Model 2: crew/pass and crew/crew contacts each day
 
