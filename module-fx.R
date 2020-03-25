@@ -42,8 +42,12 @@ init_covid <- function(x, param, init, control, s) {
   dat$attr$arrival.time <- rep(1, num)
   dat$attr$uid <- 1:num
 
-  dat$attr$pass.room <- get.vertex.attribute(nw[[1]], "pass.room")
-  dat$attr$type <- get.vertex.attribute(nw[[1]], "type")
+  # Pull in attributes on network
+  nwattr.all <- names(nw[[1]][["val"]][[1]])
+  nwattr.use <- nwattr.all[!nwattr.all %in% c("na", "vertex.names")]
+  for (i in seq_along(nwattr.use)) {
+    dat$attr[[nwattr.use[i]]] <- get.vertex.attribute(nw[[1]], nwattr.use[i])
+  }
 
   # Convert to tergmLite method
   dat <- init_tergmLite(dat)
