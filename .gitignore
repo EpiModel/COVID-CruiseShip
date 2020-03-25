@@ -40,3 +40,7 @@ vignettes/*.pdf
 *.Rproj
 .DS_Store
 *.rds
+
+*.docx
+*.xlsx
+*.webloc
