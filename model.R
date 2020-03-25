@@ -111,6 +111,9 @@ saveRDS(est, file = "est/est.covid.rds")
 
 # Epidemic model simulation -----------------------------------------------
 
+# Read in fitted network models
+est <- readRDS("est/est.covid.rds")
+
 # Model parameters
 param <- param.net(inf.prob = 0.5, act.rate = 1,
                    ei.rate = 1/5.2, ir.rate = 1/7)
@@ -119,12 +122,12 @@ param <- param.net(inf.prob = 0.5, act.rate = 1,
 init <- init.net(e.num = 10)
 
 # Read in the module functions
-source("module-fx.R")
+source("module-fx.R", echo = FALSE)
 
 # Control settings
-control <- control.net(nsteps = 100,
-                       nsims = 25,
-                       ncores = 5,
+control <- control.net(nsteps = 60,
+                       nsims = 24,
+                       ncores = 8,
                        initialize.FUN = init_covid,
                        departures.FUN = NULL,
                        arrivals.FUN = NULL,
@@ -141,23 +144,14 @@ print(sim)
 
 # Plot outcomes
 par(mar = c(3,3,1,1), mgp = c(2,1,0))
+pal <- RColorBrewer::brewer.pal(4, "Set1")
+
 plot(sim,
-     mean.col = 1:4, mean.lwd = 1, mean.smooth = FALSE,
-     qnts = 1, qnts.col = 1:4, qnts.alpha = 0.25, qnts.smooth = FALSE,
+     mean.col = pal, mean.lwd = 1, mean.smooth = FALSE,
+     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = FALSE,
      legend = TRUE)
 
 plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
-     mean.col = 1:4, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = 1:4, qnts.alpha = 0.25, qnts.smooth = TRUE,
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
-
-
-
-# Testing
-# dat <- init_covid(est, param, init, control, s = 1)
-# for (at in 2:250) {
-#   dat <- resim_nets_covid(dat, at)
-#   dat <- infect_covid(dat, at)
-#   dat <- progress_covid(dat, at)
-#   dat <- prevalence_covid(dat, at)
-# }
