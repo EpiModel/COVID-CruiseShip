@@ -41,14 +41,14 @@ nw <- set.vertex.attribute(nw, "pass.room", room.ids.pass, pass.ids)
 # Model 1: pass/pass contacts within rooms each day
 
 # Define the formation model
-formation = ~edges + nodematch("pass.room") + nodefactor("type", levels = -2)
+formation = ~edges + concurrent + nodefactor("type", levels = -2)
 
 # Input the appropriate target statistics for each term
 # one contact per day
 md <- 1
 edges <- n.pass * md/2
 
-target.stats <- c(edges, edges, 0)
+target.stats <- c(edges, 0, 0)
 
 # Parameterize the dissolution model
 coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 25000)
@@ -93,14 +93,17 @@ pp <- 0
 
 formation2 <- ~nodemix("type", levels = NULL)
 target.stats2 <- c(cc, cp, pp)
+target.stats2
 
-est2 <- netest(nw, formation2, target.stats2, coef.diss,
+coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+
+est2 <- netest(nw, formation2, target.stats2, coef.diss2,
                set.control.ergm = control.ergm(MCMLE.maxit = 500))
 
-dx2 <- netdx(est2, nsims = 10000, dynamic = FALSE,
-            nwstats.formula = ~edges + nodemix("type", levels = NULL))
-print(dx2)
-
+dx4 <- netdx(est2, nsims = 10000, dynamic = FALSE,
+             nwstats.formula = ~edges + nodemix("type", levels = NULL))
+print(dx4)
+plot(dx4, sim.lines = TRUE)
 
 est <- list(est1, est2)
 saveRDS(est, file = "est/est.covid.rds")
