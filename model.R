@@ -151,7 +151,8 @@ param <- param.net(inf.prob.pp = 0.5,
                    mort.dis.mult = 100)
 
 # Initial conditions
-init <- init.net(e.num = 10)
+init <- init.net(e.num.pass = 1,
+                 e.num.crew = 0)
 
 # Read in the module functions
 source("module-fx.R", echo = FALSE)
