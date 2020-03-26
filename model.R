@@ -130,7 +130,7 @@ mr_pp_pd <- mortality_rate / 1e5 / 365
 # Build out a mortality rate vector
 age_spans <- c(1, 4, rep(5, 16), 1)
 mr_vec <- rep(mr_pp_pd, times = age_spans)
-data.frame(ages, mr_vec)
+
 
 
 # Epidemic model simulation -----------------------------------------------
@@ -139,8 +139,12 @@ data.frame(ages, mr_vec)
 est <- readRDS("est/est.covid.rds")
 
 # Model parameters
-param <- param.net(inf.prob = 0.5,
-                   act.rate = 1,
+param <- param.net(inf.prob.pp = 0.5,
+                   act.rate.pp = 1,
+                   inf.prob.pc = 0.5,
+                   act.rate.pc = 1,
+                   inf.prob.cc = 0.5,
+                   act.rate.cc = 1,
                    ei.rate = 1/5.2,
                    ir.rate = 1/7,
                    mort.rates = mr_vec,
@@ -154,8 +158,8 @@ source("module-fx.R", echo = FALSE)
 
 # Control settings
 control <- control.net(nsteps = 60,
-                       nsims = 7,
-                       ncores = 7,
+                       nsims = 1,
+                       ncores = 1,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = dfunc_covid,

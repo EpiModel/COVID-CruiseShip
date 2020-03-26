@@ -175,25 +175,25 @@ infect_covid <- function(dat, at) {
   active <- dat$attr$active
   status <- dat$attr$status
 
-  ## Parameters ##
-  inf.prob <- dat$param$inf.prob
-  act.rate <- dat$param$act.rate
-
   ## Find infected nodes ##
   idsInf <- which(active == 1 & status == "i")
   nActive <- sum(active == 1)
   nElig <- length(idsInf)
 
   ## Initialize default incidence at 0 ##
-  nInf1 <- nInf2 <- 0
+  nInf1 <- nInf2 <- nInf3 <- 0
 
   if (length(idsInf) > 0) {
 
     ## Look up discordant edgelist ##
-    del1 <- discord_edgelist_covid(dat, nw = 1)
+    del1 <- discord_edgelist_covid(dat, nw = 1, contact.type = NULL)
 
     ## If any discordant pairs, proceed ##
     if (!(is.null(del1))) {
+
+      ## Parameters ##
+      inf.prob <- dat$param$inf.prob.pp
+      act.rate <- dat$param$act.rate.pp
 
       # Set parameters on discordant edgelist data frame
       del1$transProb <- inf.prob
@@ -217,8 +217,12 @@ infect_covid <- function(dat, at) {
       }
     }
 
-    del2 <- discord_edgelist_covid(dat, nw = 2)
+    del2 <- discord_edgelist_covid(dat, nw = 2, contact.type = "pass.crew")
     if (!(is.null(del2))) {
+
+      ## Parameters ##
+      inf.prob <- dat$param$inf.prob.pc
+      act.rate <- dat$param$act.rate.pc
 
       # Set parameters on discordant edgelist data frame
       del2$transProb <- inf.prob
@@ -242,18 +246,64 @@ infect_covid <- function(dat, at) {
       }
     }
 
+    del3 <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
+    if (!(is.null(del3))) {
+
+      ## Parameters ##
+      inf.prob <- dat$param$inf.prob.cc
+      act.rate <- dat$param$act.rate.cc
+
+      # Set parameters on discordant edgelist data frame
+      del3$transProb <- inf.prob
+      del3$actRate <- act.rate
+      del3$finalProb <- 1 - (1 - del3$transProb)^del3$actRate
+
+      # Stochastic transmission process
+      transmit <- rbinom(nrow(del3), 1, del3$finalProb)
+
+      # Keep rows where transmission occurred
+      del3 <- del3[which(transmit == 1), ]
+
+      # Look up new ids if any transmissions occurred
+      idsNewInf3 <- unique(del3$sus)
+      nInf3 <- length(idsNewInf3)
+
+      # Set new attributes for those newly infected
+      if (nInf3 > 0) {
+        dat$attr$status[idsNewInf3] <- "e"
+        dat$attr$infTime[idsNewInf3] <- at
+      }
+    }
+
   }
 
   ## Save summary statistic for S->E flow
-  dat$epi$se.flow[at] <- nInf1 + nInf2
+  dat$epi$se.flow[at] <- nInf1 + nInf2 + nInf3
+  dat$epi$se.pp.flow[at] <- nInf1
+  dat$epi$se.pc.flow[at] <- nInf2
+  dat$epi$se.cc.flow[at] <- nInf3
 
   return(dat)
 }
 
-discord_edgelist_covid <- function(dat, nw = 1) {
+discord_edgelist_covid <- function(dat, nw = 1, contact.type = NULL) {
 
   status <- dat$attr$status
+  type <- dat$attr$type
   el <- dat$el[[nw]]
+
+  if (!is.null(contact.type)) {
+    el.type <- matrix(type[el], ncol = 2)
+    if (contact.type == "pass.crew") {
+      subset.ids <- c(which(el.type[, 1] == "p" & el.type[, 2] == "c"),
+                      which(el.type[, 1] == "c" & el.type[, 2] == "p"))
+      el <- el[subset.ids, , drop = FALSE]
+    }
+    if (contact.type == "crew.crew") {
+      subset.ids <- which(el.type[, 1] == "c" & el.type[, 2] == "c")
+      el <- el[subset.ids, , drop = FALSE]
+    }
+  }
 
   del <- NULL
   if (nrow(el) > 0) {
@@ -338,6 +388,7 @@ prevalence_covid <- function(dat, at) {
   # Initialize Outputs
   var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
                  "se.flow", "ei.flow", "ir.flow", "d.flow",
+                 "se.pp.flow", "se.pc.flow", "se.cc.flow",
                  "meanAge")
   if (at == 1) {
     for (i in 1:length(var.names)) {
@@ -399,7 +450,6 @@ dfunc_covid <- function(dat, at) {
     nDeaths <- length(idsDeaths)
 
     if (nDeaths > 0) {
-      # browser()
       dat$attr$active[idsDeaths] <- 0
       inactive <- which(dat$attr$active == 0)
       dat$attr <- deleteAttr(dat$attr, inactive)
