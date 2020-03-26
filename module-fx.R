@@ -181,107 +181,120 @@ infect_covid <- function(dat, at) {
   nElig <- length(idsInf)
 
   ## Initialize default incidence at 0 ##
-  nInf1 <- nInf2 <- nInf3 <- 0
+  nInf.PtoP <- 0
+  nInf.PtoC <- 0
+  nInf.CtoP <- 0
+  nInf.CtoC <- 0
 
+  # Pass/Pass Contacts
   if (length(idsInf) > 0) {
 
     ## Look up discordant edgelist ##
-    del1 <- discord_edgelist_covid(dat, nw = 1, contact.type = NULL)
+    del.PP <- discord_edgelist_covid(dat, nw = 1, contact.type = NULL)
 
     ## If any discordant pairs, proceed ##
-    if (!(is.null(del1))) {
+    if (!(is.null(del.PP))) {
 
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.pp
       act.rate <- dat$param$act.rate.pp
 
       # Set parameters on discordant edgelist data frame
-      del1$transProb <- inf.prob
-      del1$actRate <- act.rate
-      del1$finalProb <- 1 - (1 - del1$transProb)^del1$actRate
+      del.PP$transProb <- inf.prob
+      del.PP$actRate <- act.rate
+      del.PP$finalProb <- 1 - (1 - del.PP$transProb)^del.PP$actRate
 
       # Stochastic transmission process
-      transmit <- rbinom(nrow(del1), 1, del1$finalProb)
+      transmit <- rbinom(nrow(del.PP), 1, del.PP$finalProb)
 
       # Keep rows where transmission occurred
-      del1 <- del1[which(transmit == 1), ]
+      del.PP <- del.PP[which(transmit == 1), ]
 
       # Look up new ids if any transmissions occurred
-      idsNewInf1 <- unique(del1$sus)
-      nInf1 <- length(idsNewInf1)
+      idsNewInf.PtoP <- unique(del.PP$sus)
+      nInf.PtoP <- length(idsNewInf.PtoP)
 
       # Set new attributes for those newly infected
-      if (nInf1 > 0) {
-        dat$attr$status[idsNewInf1] <- "e"
-        dat$attr$infTime[idsNewInf1] <- at
+      if (nInf.PtoP > 0) {
+        dat$attr$status[idsNewInf.PtoP] <- "e"
+        dat$attr$infTime[idsNewInf.PtoP] <- at
       }
     }
 
-    del2 <- discord_edgelist_covid(dat, nw = 2, contact.type = "pass.crew")
-    if (!(is.null(del2))) {
+    # Pass/Crew Contacts
+    del.PC <- discord_edgelist_covid(dat, nw = 2, contact.type = "pass.crew")
+    if (!(is.null(del.PC))) {
 
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.pc
       act.rate <- dat$param$act.rate.pc
 
       # Set parameters on discordant edgelist data frame
-      del2$transProb <- inf.prob
-      del2$actRate <- act.rate
-      del2$finalProb <- 1 - (1 - del2$transProb)^del2$actRate
+      del.PC$transProb <- inf.prob
+      del.PC$actRate <- act.rate
+      del.PC$finalProb <- 1 - (1 - del.PC$transProb)^del.PC$actRate
 
       # Stochastic transmission process
-      transmit <- rbinom(nrow(del2), 1, del2$finalProb)
+      transmit <- rbinom(nrow(del.PC), 1, del.PC$finalProb)
 
       # Keep rows where transmission occurred
-      del2 <- del2[which(transmit == 1), ]
+      del.PC <- del.PC[which(transmit == 1), ]
 
-      # Look up new ids if any transmissions occurred
-      idsNewInf2 <- unique(del2$sus)
-      nInf2 <- length(idsNewInf2)
+      # New transmissions by direction
+      idsNewInf.CtoP <- unique(del.PC$sus[dat$attr$type[del.PC$sus] == "p"])
+      nInf.CtoP <- length(idsNewInf.CtoP)
+
+      idsNewInf.PtoC <- unique(del.PC$sus[dat$attr$type[del.PC$sus] == "c"])
+      nInf.PtoC <- length(idsNewInf.PtoC)
+
+      # Either direction
+      idsNewInf.PC <- union(idsNewInf.CtoP, idsNewInf.PtoC)
 
       # Set new attributes for those newly infected
-      if (nInf2 > 0) {
-        dat$attr$status[idsNewInf2] <- "e"
-        dat$attr$infTime[idsNewInf2] <- at
+      if ((nInf.CtoP + nInf.PtoC) > 0) {
+        dat$attr$status[idsNewInf.PC] <- "e"
+        dat$attr$infTime[idsNewInf.PC] <- at
       }
     }
 
-    del3 <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
-    if (!(is.null(del3))) {
+    # Crew/Crew Contacts
+    del.CC <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
+    if (!(is.null(del.CC))) {
 
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.cc
       act.rate <- dat$param$act.rate.cc
 
       # Set parameters on discordant edgelist data frame
-      del3$transProb <- inf.prob
-      del3$actRate <- act.rate
-      del3$finalProb <- 1 - (1 - del3$transProb)^del3$actRate
+      del.CC$transProb <- inf.prob
+      del.CC$actRate <- act.rate
+      del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
 
       # Stochastic transmission process
-      transmit <- rbinom(nrow(del3), 1, del3$finalProb)
+      transmit <- rbinom(nrow(del.CC), 1, del.CC$finalProb)
 
       # Keep rows where transmission occurred
-      del3 <- del3[which(transmit == 1), ]
+      del.CC <- del.CC[which(transmit == 1), ]
 
       # Look up new ids if any transmissions occurred
-      idsNewInf3 <- unique(del3$sus)
-      nInf3 <- length(idsNewInf3)
+      idsNewInf.CtoC <- unique(del.CC$sus)
+      nInf.CtoC <- length(idsNewInf.CtoC)
 
       # Set new attributes for those newly infected
-      if (nInf3 > 0) {
-        dat$attr$status[idsNewInf3] <- "e"
-        dat$attr$infTime[idsNewInf3] <- at
+      if (nInf.CtoC > 0) {
+        dat$attr$status[idsNewInf.CtoC] <- "e"
+        dat$attr$infTime[idsNewInf.CtoC] <- at
       }
     }
 
   }
 
   ## Save summary statistic for S->E flow
-  dat$epi$se.flow[at] <- nInf1 + nInf2 + nInf3
-  dat$epi$se.pp.flow[at] <- nInf1
-  dat$epi$se.pc.flow[at] <- nInf2
-  dat$epi$se.cc.flow[at] <- nInf3
+  dat$epi$se.flow[at] <- nInf.PtoP + nInf.PtoC + nInf.CtoP + nInf.CtoC
+  dat$epi$se.pp.flow[at] <- nInf.PtoP
+  dat$epi$se.pc.flow[at] <- nInf.PtoC
+  dat$epi$se.cp.flow[at] <- nInf.CtoP
+  dat$epi$se.cc.flow[at] <- nInf.CtoC
 
   return(dat)
 }
@@ -391,7 +404,7 @@ prevalence_covid <- function(dat, at) {
   var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
                  "i.pass.num", "i.crew.num",
                  "se.flow", "ei.flow", "ir.flow", "d.flow",
-                 "se.pp.flow", "se.pc.flow", "se.cc.flow",
+                 "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge")
   if (at == 1) {
     for (i in 1:length(var.names)) {
