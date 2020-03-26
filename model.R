@@ -140,10 +140,16 @@ est <- readRDS("est/est.covid.rds")
 
 # Model parameters
 param <- param.net(inf.prob.pp = 0.5,
+                   inf.prob.pp.inter.rr = 1,
+                   inf.prob.pp.inter.time = 15,
                    act.rate.pp = 10,
                    inf.prob.pc = 0.5,
+                   inf.prob.pc.inter.rr = 1,
+                   inf.prob.pc.inter.time = 15,
                    act.rate.pc = 1,
                    inf.prob.cc = 0.5,
+                   inf.prob.cc.inter.rr = 1,
+                   inf.prob.cc.inter.time = 15,
                    act.rate.cc = 1,
                    ei.rate = 1/5.2,
                    ir.rate = 1/7,
@@ -182,6 +188,9 @@ print(sim)
 df <- as.data.frame(sim, out = "mean")
 round(df, 1)
 
+sum(df$se.flow)
+summary(colSums(sim$epi$se.flow))
+
 # Plot outcomes
 par(mar = c(3,3,1,1), mgp = c(2,1,0))
 pal <- RColorBrewer::brewer.pal(9, "Set1")
@@ -196,8 +205,12 @@ plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
+plot(sim, y = c("se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow"),
+     mean.col = pal, mean.lwd = 2, mean.smooth = FALSE, qnts = FALSE,
+     legend = TRUE)
+
 plot(sim, y = "d.flow",
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 

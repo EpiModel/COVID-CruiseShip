@@ -203,8 +203,14 @@ infect_covid <- function(dat, at) {
       inf.prob <- dat$param$inf.prob.pp
       act.rate <- dat$param$act.rate.pp
 
+      inf.prob.pp.inter.rr <- dat$param$inf.prob.pp.inter.rr
+      inf.prob.pp.inter.time <- dat$param$inf.prob.pp.inter.time
+
       # Set parameters on discordant edgelist data frame
       del.PP$transProb <- inf.prob
+      if (at >= inf.prob.pp.inter.time) {
+        del.PP$transProb <- del.PP$transProb * inf.prob.pp.inter.rr
+      }
       del.PP$actRate <- act.rate
       del.PP$finalProb <- 1 - (1 - del.PP$transProb)^del.PP$actRate
 
@@ -233,8 +239,14 @@ infect_covid <- function(dat, at) {
       inf.prob <- dat$param$inf.prob.pc
       act.rate <- dat$param$act.rate.pc
 
+      inf.prob.pc.inter.rr <- dat$param$inf.prob.pc.inter.rr
+      inf.prob.pc.inter.time <- dat$param$inf.prob.pc.inter.time
+
       # Set parameters on discordant edgelist data frame
       del.PC$transProb <- inf.prob
+      if (at >= inf.prob.pc.inter.time) {
+        del.PC$transProb <- del.PC$transProb * inf.prob.pc.inter.rr
+      }
       del.PC$actRate <- act.rate
       del.PC$finalProb <- 1 - (1 - del.PC$transProb)^del.PC$actRate
 
@@ -269,8 +281,14 @@ infect_covid <- function(dat, at) {
       inf.prob <- dat$param$inf.prob.cc
       act.rate <- dat$param$act.rate.cc
 
+      inf.prob.cc.inter.rr <- dat$param$inf.prob.cc.inter.rr
+      inf.prob.cc.inter.time <- dat$param$inf.prob.cc.inter.time
+
       # Set parameters on discordant edgelist data frame
       del.CC$transProb <- inf.prob
+      if (at >= inf.prob.cc.inter.time) {
+        del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
+      }
       del.CC$actRate <- act.rate
       del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
 
