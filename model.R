@@ -140,7 +140,7 @@ est <- readRDS("est/est.covid.rds")
 
 # Model parameters
 param <- param.net(inf.prob.pp = 0.5,
-                   act.rate.pp = 1,
+                   act.rate.pp = 10,
                    inf.prob.pc = 0.5,
                    act.rate.pc = 1,
                    inf.prob.cc = 0.5,
@@ -158,8 +158,8 @@ source("module-fx.R", echo = FALSE)
 
 # Control settings
 control <- control.net(nsteps = 60,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = 7,
+                       ncores = 7,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = dfunc_covid,
@@ -178,19 +178,26 @@ control <- control.net(nsteps = 60,
 sim <- netsim(est, param, init, control)
 print(sim)
 
+df <- as.data.frame(sim, out = "mean")
+round(df, 1)
+
 # Plot outcomes
 par(mar = c(3,3,1,1), mgp = c(2,1,0))
-pal <- RColorBrewer::brewer.pal(4, "Set1")
+pal <- RColorBrewer::brewer.pal(9, "Set1")
 
 plot(sim,
-     mean.col = pal, mean.lwd = 1, mean.smooth = FALSE,
-     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = FALSE,
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
-plot(sim, y = c("se.flow", "ei.flow", "ir.flow", "d.flow"),
+plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
-df <- as.data.frame(sim, out = "mean")
-df
+plot(sim, y = "d.flow",
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
+     legend = TRUE)
+
+
