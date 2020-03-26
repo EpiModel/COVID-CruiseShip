@@ -383,10 +383,13 @@ prevalence_covid <- function(dat, at) {
 
   active <- dat$attr$active
   status <- dat$attr$status
+  type <- dat$attr$type
+
   nsteps <- dat$control$nsteps
 
   # Initialize Outputs
   var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
+                 "i.pass.num", "i.crew.num",
                  "se.flow", "ei.flow", "ir.flow", "d.flow",
                  "se.pp.flow", "se.pc.flow", "se.cc.flow",
                  "meanAge")
@@ -400,9 +403,12 @@ prevalence_covid <- function(dat, at) {
   dat$epi$num[at] <- sum(active == 1)
 
   dat$epi$s.num[at] <- sum(active == 1 & status == "s")
-  dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
+  dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
+
+  dat$epi$i.pass.num[at] <- sum(active == 1 & status == "i" & type == "p")
+  dat$epi$i.crew.num[at] <- sum(active == 1 & status == "i" & type == "c")
 
   dat$epi$meanAge[at] <- mean(dat$attr$age, na.rm = TRUE)
 
