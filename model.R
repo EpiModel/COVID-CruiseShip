@@ -14,6 +14,22 @@ library("tergmLite")
 packageVersion("EpiModel") == "1.8.0"
 
 
+# Mortality Rates ---------------------------------------------------------
+
+# Rates per 100,000 for age groups: <1, 1-4, 5-9, 10-14, 15-19, 20-24, 25-29,
+#                                   30-34, 35-39, 40-44, 45-49, 50-54, 55-59,
+#                                   60-64, 65-69, 70-74, 75-79, 80-84, 85+
+# source: https://www.statista.com/statistics/241572/death-rate-by-age-and-sex-in-the-us/
+mortality_rate <- c(588.45, 24.8, 11.7, 14.55, 47.85, 88.2, 105.65, 127.2,
+                    154.3, 206.5, 309.3, 495.1, 736.85, 1051.15, 1483.45,
+                    2294.15, 3642.95, 6139.4, 13938.3)
+# rate per person, per day
+mr_pp_pd <- mortality_rate / 1e5 / 365
+
+# Build out a mortality rate vector
+age_spans <- c(1, 4, rep(5, 16), 1)
+mr_vec <- rep(mr_pp_pd, times = age_spans)
+
 
 # Network model estimation ------------------------------------------------
 
@@ -60,19 +76,24 @@ coef.diss
 
 # Fit the model
 est1 <- netest(nw, formation, target.stats, coef.diss,
-              set.control.ergm = control.ergm(MCMLE.maxit = 500))
+               set.control.ergm = control.ergm(MCMLE.maxit = 500,
+                                               MCMC.interval = 3e4,
+                                               MCMC.burnin = 2e6))
 summary(est1)
+mcmc.diagnostics(est1$fit)
 
 # Model diagnostics
 dx1 <- netdx(est1, nsims = 10000, dynamic = FALSE,
              nwstats.formula = ~edges + nodematch("pass.room") +
-                     nodefactor("type", levels = NULL))
+                     nodefactor("type", levels = NULL),
+             set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1)
 plot(dx1, sim.lines = TRUE)
 
 dx2 <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
              nwstats.formula = ~edges + nodematch("pass.room") +
-                     nodefactor("type", levels = NULL))
+                     nodefactor("type", levels = NULL),
+             set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx2)
 plot(dx2)
 
@@ -116,20 +137,7 @@ saveRDS(est, file = "est/est.covid.rds")
 
 # Other Parameter Estimation ----------------------------------------------
 
-# Mortality Rates
-# Rates per 100,000 for age groups: <1, 1-4, 5-9, 10-14, 15-19, 20-24, 25-29,
-#                                   30-34, 35-39, 40-44, 45-49, 50-54, 55-59,
-#                                   60-64, 65-69, 70-74, 75-79, 80-84, 85+
-# source: https://www.statista.com/statistics/241572/death-rate-by-age-and-sex-in-the-us/
-mortality_rate <- c(588.45, 24.8, 11.7, 14.55, 47.85, 88.2, 105.65, 127.2,
-                    154.3, 206.5, 309.3, 495.1, 736.85, 1051.15, 1483.45,
-                    2294.15, 3642.95, 6139.4, 13938.3)
-# rate per person, per day
-mr_pp_pd <- mortality_rate / 1e5 / 365
 
-# Build out a mortality rate vector
-age_spans <- c(1, 4, rep(5, 16), 1)
-mr_vec <- rep(mr_pp_pd, times = age_spans)
 
 
 
@@ -143,14 +151,20 @@ param <- param.net(inf.prob.pp = 0.5,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = 15,
                    act.rate.pp = 10,
+                   act.rate.pp.inter.rr = 1,
+                   act.rate.pp.inter.time = 15,
                    inf.prob.pc = 0.5,
                    inf.prob.pc.inter.rr = 1,
                    inf.prob.pc.inter.time = 15,
                    act.rate.pc = 1,
+                   act.rate.pc.inter.rr = 1,
+                   act.rate.pc.inter.time = 15,
                    inf.prob.cc = 0.5,
                    inf.prob.cc.inter.rr = 1,
                    inf.prob.cc.inter.time = 15,
                    act.rate.cc = 1,
+                   act.rate.cc.inter.rr = 1,
+                   act.rate.cc.inter.time = 15,
                    ei.rate = 1/5.2,
                    ir.rate = 1/7,
                    mort.rates = mr_vec,
@@ -165,7 +179,7 @@ source("module-fx.R", echo = FALSE)
 
 # Control settings
 control <- control.net(nsteps = 60,
-                       nsims = 7,
+                       nsims = 56,
                        ncores = 7,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
@@ -213,5 +227,3 @@ plot(sim, y = "d.flow",
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
-
-

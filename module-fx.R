@@ -202,9 +202,10 @@ infect_covid <- function(dat, at) {
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.pp
       act.rate <- dat$param$act.rate.pp
-
       inf.prob.pp.inter.rr <- dat$param$inf.prob.pp.inter.rr
       inf.prob.pp.inter.time <- dat$param$inf.prob.pp.inter.time
+      act.rate.pp.inter.rr <- dat$param$act.rate.pp.inter.rr
+      act.rate.pp.inter.time <- dat$param$act.rate.pp.inter.time
 
       # Set parameters on discordant edgelist data frame
       del.PP$transProb <- inf.prob
@@ -212,6 +213,9 @@ infect_covid <- function(dat, at) {
         del.PP$transProb <- del.PP$transProb * inf.prob.pp.inter.rr
       }
       del.PP$actRate <- act.rate
+      if (at >= act.rate.pp.inter.time) {
+        del.PP$actRate <- del.PP$actRate * act.rate.pp.inter.rr
+      }
       del.PP$finalProb <- 1 - (1 - del.PP$transProb)^del.PP$actRate
 
       # Stochastic transmission process
@@ -238,9 +242,10 @@ infect_covid <- function(dat, at) {
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.pc
       act.rate <- dat$param$act.rate.pc
-
       inf.prob.pc.inter.rr <- dat$param$inf.prob.pc.inter.rr
       inf.prob.pc.inter.time <- dat$param$inf.prob.pc.inter.time
+      act.rate.pc.inter.rr <- dat$param$act.rate.pc.inter.rr
+      act.rate.pc.inter.time <- dat$param$act.rate.pc.inter.time
 
       # Set parameters on discordant edgelist data frame
       del.PC$transProb <- inf.prob
@@ -248,6 +253,9 @@ infect_covid <- function(dat, at) {
         del.PC$transProb <- del.PC$transProb * inf.prob.pc.inter.rr
       }
       del.PC$actRate <- act.rate
+      if (at >= act.rate.pc.inter.time) {
+        del.PC$actRate <- del.PC$actRate * act.rate.pc.inter.rr
+      }
       del.PC$finalProb <- 1 - (1 - del.PC$transProb)^del.PC$actRate
 
       # Stochastic transmission process
@@ -280,9 +288,10 @@ infect_covid <- function(dat, at) {
       ## Parameters ##
       inf.prob <- dat$param$inf.prob.cc
       act.rate <- dat$param$act.rate.cc
-
       inf.prob.cc.inter.rr <- dat$param$inf.prob.cc.inter.rr
       inf.prob.cc.inter.time <- dat$param$inf.prob.cc.inter.time
+      act.rate.cc.inter.rr <- dat$param$act.rate.cc.inter.rr
+      act.rate.cc.inter.time <- dat$param$act.rate.cc.inter.time
 
       # Set parameters on discordant edgelist data frame
       del.CC$transProb <- inf.prob
@@ -290,6 +299,9 @@ infect_covid <- function(dat, at) {
         del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
       }
       del.CC$actRate <- act.rate
+      if (at >= act.rate.cc.inter.time) {
+        del.CC$actRate <- del.CC$actRate * act.rate.cc.inter.rr
+      }
       del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
 
       # Stochastic transmission process
