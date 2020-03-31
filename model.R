@@ -41,16 +41,21 @@ n.rooms <- 1337
 n.pass.per.room <- n.pass/n.rooms
 n.pass.per.room
 
-pass.ids <- 1:n.pass
-
-room.ids <- 1:n.rooms
-room.ids.pass <- apportion_lr(n.pass, room.ids, rep(1/n.rooms, n.rooms))
-table(room.ids.pass)
-
 type.attr <- rep(c("p", "c"), times = c(n.pass, n.crew))
 
-ages <- seq(30, 80, 1/365)
-age <- sample(ages, n, TRUE)
+# median age for crew was 36 (IQR:29-43) and
+# the median age of the passengers was 69 (IQR: 62-73)
+ages.pass <- round(rnorm(n.pass, 69, 6), 1)
+summary(ages.pass)
+table(ages.pass)
+ages.crew <- pmax(round(rnorm(n.crew, 36, 10), 1), 18)
+summary(ages.crew)
+table(ages.crew)
+
+age <- rep(0, n)
+age[type.attr == "p"] <- ages.pass
+age[type.attr == "c"] <- ages.crew
+summary(age)
 
 # Initialize the network
 nw <- network.initialize(n, directed = FALSE)
@@ -61,14 +66,15 @@ nw <- set.vertex.attribute(nw, "age", age)
 # Model 1: pass/pass contacts within rooms each day
 
 # Define the formation model
-formation = ~edges + concurrent + nodefactor("type", levels = -2)
+formation = ~edges + concurrent + nodefactor("type", levels = -2) + absdiff("age")
 
 # Input the appropriate target statistics for each term
 # one contact per day
-md <- 1
+md <- 0.98
 edges <- n.pass * md/2
+absdiff <- edges * 5
 
-target.stats <- c(edges, 0, 0)
+target.stats <- c(edges, 0, 0, absdiff)
 
 # Parameterize the dissolution model
 coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 25000)
@@ -83,16 +89,14 @@ summary(est1)
 mcmc.diagnostics(est1$fit)
 
 # Model diagnostics
-dx1 <- netdx(est1, nsims = 10000, dynamic = FALSE,
-             nwstats.formula = ~edges + nodematch("pass.room") +
-                     nodefactor("type", levels = NULL),
+dx1 <- netdx(est1, nsims = 1000, dynamic = FALSE,
+             nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1)
 plot(dx1, sim.lines = TRUE)
 
 dx2 <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
-             nwstats.formula = ~edges + nodematch("pass.room") +
-                     nodefactor("type", levels = NULL),
+             nwstats.formula = ~edges + nodefactor("type", levels = NULL),
              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx2)
 plot(dx2)
@@ -100,7 +104,10 @@ plot(dx2)
 dx3 <- netdx(est1, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
              keep.tnetwork = TRUE)
 dx3
-as.data.frame(get_network(dx3))
+df <- as.data.frame(get_network(dx3))
+df[which(df$onset.censored == FALSE | df$terminus.censored == FALSE), ]
+table(c(df$tail, df$head))
+summary(as.numeric(table(c(df$tail, df$head))))
 
 ## Model 2: crew/pass and crew/crew contacts each day
 
@@ -132,12 +139,6 @@ plot(dx4, sim.lines = TRUE)
 
 est <- list(est1, est2)
 saveRDS(est, file = "est/est.covid.rds")
-
-
-
-# Other Parameter Estimation ----------------------------------------------
-
-
 
 
 
