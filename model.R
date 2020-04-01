@@ -69,7 +69,7 @@ nw <- set.vertex.attribute(nw, "age", age)
 formation = ~edges + concurrent + nodefactor("type", levels = -2) + absdiff("age")
 
 # Input the appropriate target statistics for each term
-# one contact per day
+# about one persistent pass/pass contact
 md <- 0.98
 edges <- n.pass * md/2
 absdiff <- edges * 5
@@ -89,55 +89,92 @@ summary(est1)
 mcmc.diagnostics(est1$fit)
 
 # Model diagnostics
-dx1 <- netdx(est1, nsims = 1000, dynamic = FALSE,
-             nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
-             set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx1)
-plot(dx1, sim.lines = TRUE)
+dx1a <- netdx(est1, nsims = 1000, dynamic = FALSE,
+              nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
+              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx1a)
+plot(dx1a, sim.lines = TRUE)
 
-dx2 <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
-             nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-             set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx2)
-plot(dx2)
+dx1b <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
+              nwstats.formula = ~edges + nodefactor("type", levels = NULL),
+              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx1b)
+plot(dx1b)
 
-dx3 <- netdx(est1, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
-             keep.tnetwork = TRUE)
-dx3
-df <- as.data.frame(get_network(dx3))
+dx1c <- netdx(est1, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
+              keep.tnetwork = TRUE)
+dx1c
+df <- as.data.frame(get_network(dx1c))
 df[which(df$onset.censored == FALSE | df$terminus.censored == FALSE), ]
 table(c(df$tail, df$head))
 summary(as.numeric(table(c(df$tail, df$head))))
 
-## Model 2: crew/pass and crew/crew contacts each day
 
-# model for worker/worker and worker/guest contact
-# 5 contacts per day, 3 with guests (x 2 workers per time) and 2 within workers
+## Model 2: crew/crew contacts each day
 
-# crew/crew contacts
-cc <- 2*n.crew/2
+# about 2 ongoing contacts a day, but max at 3
+formation2 <- ~edges + degrange(from = 4) + nodefactor("type", levels = -1)
+
+md <- 2
+edges <- n.crew * md/2
+target.stats2 <- c(edges, 0, 0)
+
+# Assume longer duration
+coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 100)
+coef.diss2
+
+# Fit the model
+est2 <- netest(nw, formation2, target.stats2, coef.diss2,
+               set.control.ergm = control.ergm(MCMLE.maxit = 500,
+                                               MCMC.interval = 3e4,
+                                               MCMC.burnin = 2e6))
+summary(est2)
+mcmc.diagnostics(est2$fit)
+
+dx2a <- netdx(est2, nsims = 1000, dynamic = FALSE,
+             nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
+             set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx2a)
+plot(dx2a, sim.lines = TRUE)
+
+dx2b <- netdx(est2, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
+              nwstats.formula = ~edges + nodefactor("type", levels = NULL),
+              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx2b)
+
+dx2c <- netdx(est2, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
+             keep.tnetwork = TRUE)
+dx2c
+df <- as.data.frame(get_network(dx2c))
+df[which(df$onset.censored == FALSE | df$terminus.censored == FALSE), ]
+table(c(df$tail, df$head))
+summary(as.numeric(table(c(df$tail, df$head))))
+
+
+## Model 3: crew/pass contacts each day
 
 # crew/pass contacts: 3 times a day x 2 workers x each room x average 2 people per room
-cp <- 3*2*n.rooms*2/2
+# 3 times a day will go into act rate
+# assume making contact with one person per room
+cp.edges <- 2*n.rooms/2
 
-# pass/pass contacts
-pp <- 0
+formation3 <- ~edges + degrange(from = 3)
+target.stats3 <- c(cp, 0)
 
-formation2 <- ~nodemix("type", levels = NULL)
-target.stats2 <- c(cc, cp, pp)
-target.stats2
+coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
-coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
-
-est2 <- netest(nw, formation2, target.stats2, coef.diss2,
+est3 <- netest(nw, formation3, target.stats3, coef.diss3,
                set.control.ergm = control.ergm(MCMLE.maxit = 500))
 
-dx4 <- netdx(est2, nsims = 10000, dynamic = FALSE,
-             nwstats.formula = ~edges + nodemix("type", levels = NULL))
-print(dx4)
-plot(dx4, sim.lines = TRUE)
+dx3a <- netdx(est3, nsims = 10000, dynamic = FALSE,
+              nwstats.formula = ~edges + nodemix("type", levels = NULL))
+print(dx3a)
+plot(dx3a, sim.lines = TRUE)
 
-est <- list(est1, est2)
+
+
+
+est <- list(est1, est2, est3)
 saveRDS(est, file = "est/est.covid.rds")
 
 
