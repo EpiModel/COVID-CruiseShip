@@ -14,23 +14,6 @@ library("tergmLite")
 packageVersion("EpiModel") == "1.8.0"
 
 
-# Mortality Rates ---------------------------------------------------------
-
-# Rates per 100,000 for age groups: <1, 1-4, 5-9, 10-14, 15-19, 20-24, 25-29,
-#                                   30-34, 35-39, 40-44, 45-49, 50-54, 55-59,
-#                                   60-64, 65-69, 70-74, 75-79, 80-84, 85+
-# source: https://www.statista.com/statistics/241572/death-rate-by-age-and-sex-in-the-us/
-mortality_rate <- c(588.45, 24.8, 11.7, 14.55, 47.85, 88.2, 105.65, 127.2,
-                    154.3, 206.5, 309.3, 495.1, 736.85, 1051.15, 1483.45,
-                    2294.15, 3642.95, 6139.4, 13938.3)
-# rate per person, per day
-mr_pp_pd <- mortality_rate / 1e5 / 365
-
-# Build out a mortality rate vector
-age_spans <- c(1, 4, rep(5, 16), 1)
-mr_vec <- rep(mr_pp_pd, times = age_spans)
-
-
 # Network model estimation ------------------------------------------------
 
 n.crew <- 1045
@@ -177,29 +160,29 @@ est <- list(est1, est2, est3)
 saveRDS(est, file = "est/est.covid.rds")
 
 
-
 # Epidemic model simulation -----------------------------------------------
 
 # Read in fitted network models
 est <- readRDS("est/est.covid.rds")
 
 # Model parameters
+source("params.R")
 param <- param.net(inf.prob.pp = 0.5,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = 15,
                    act.rate.pp = 10,
                    act.rate.pp.inter.rr = 1,
                    act.rate.pp.inter.time = 15,
-                   inf.prob.pc = 0.5,
+                   inf.prob.pc = 0.5 * 0.1,
                    inf.prob.pc.inter.rr = 1,
                    inf.prob.pc.inter.time = 15,
-                   act.rate.pc = 1,
+                   act.rate.pc = 3,
                    act.rate.pc.inter.rr = 1,
                    act.rate.pc.inter.time = 15,
                    inf.prob.cc = 0.5,
                    inf.prob.cc.inter.rr = 1,
                    inf.prob.cc.inter.time = 15,
-                   act.rate.cc = 1,
+                   act.rate.cc = 2,
                    act.rate.cc.inter.rr = 1,
                    act.rate.cc.inter.time = 15,
                    ei.rate = 1/5.2,
@@ -208,16 +191,14 @@ param <- param.net(inf.prob.pp = 0.5,
                    mort.dis.mult = 100)
 
 # Initial conditions
-init <- init.net(e.num.pass = 1,
+init <- init.net(e.num.pass = 10,
                  e.num.crew = 0)
 
-# Read in the module functions
-source("module-fx.R", echo = FALSE)
-
 # Control settings
+source("module-fx.R", echo = FALSE)
 control <- control.net(nsteps = 60,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = 56,
+                       ncores = 7,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = dfunc_covid,
@@ -251,6 +232,11 @@ plot(sim,
      qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
+plot(sim, y = c("i.pass.num", "i.crew.num"),
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
+     legend = TRUE)
+
 plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
@@ -264,3 +250,5 @@ plot(sim, y = "d.flow",
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
+
+
