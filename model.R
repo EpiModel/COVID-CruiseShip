@@ -158,21 +158,20 @@ summary(as.numeric(table(c(df$tail, df$head))))
 # assume making contact with one person per room
 cp.edges <- 2*n.rooms/2
 
-formation3 <- ~edges + degrange(from = 3)
-target.stats3 <- c(cp, 0)
+formation3 <- ~edges + nodematch("type") + degrange(from = 3)
+target.stats3 <- c(cp, 0, 0)
 
 coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
 est3 <- netest(nw, formation3, target.stats3, coef.diss3,
                set.control.ergm = control.ergm(MCMLE.maxit = 500))
+summary(est3)
+mcmc.diagnostics(est3$fit)
 
 dx3a <- netdx(est3, nsims = 10000, dynamic = FALSE,
               nwstats.formula = ~edges + nodemix("type", levels = NULL))
 print(dx3a)
 plot(dx3a, sim.lines = TRUE)
-
-
-
 
 est <- list(est1, est2, est3)
 saveRDS(est, file = "est/est.covid.rds")
