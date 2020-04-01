@@ -216,8 +216,8 @@ source("module-fx.R", echo = FALSE)
 
 # Control settings
 control <- control.net(nsteps = 60,
-                       nsims = 56,
-                       ncores = 7,
+                       nsims = 1,
+                       ncores = 1,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = dfunc_covid,

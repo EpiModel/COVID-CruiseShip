@@ -232,8 +232,48 @@ infect_covid <- function(dat, at) {
       }
     }
 
+    # Crew/Crew Contacts
+    del.CC <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
+    if (!(is.null(del.CC))) {
+
+      ## Parameters ##
+      inf.prob <- dat$param$inf.prob.cc
+      act.rate <- dat$param$act.rate.cc
+      inf.prob.cc.inter.rr <- dat$param$inf.prob.cc.inter.rr
+      inf.prob.cc.inter.time <- dat$param$inf.prob.cc.inter.time
+      act.rate.cc.inter.rr <- dat$param$act.rate.cc.inter.rr
+      act.rate.cc.inter.time <- dat$param$act.rate.cc.inter.time
+
+      # Set parameters on discordant edgelist data frame
+      del.CC$transProb <- inf.prob
+      if (at >= inf.prob.cc.inter.time) {
+        del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
+      }
+      del.CC$actRate <- act.rate
+      if (at >= act.rate.cc.inter.time) {
+        del.CC$actRate <- del.CC$actRate * act.rate.cc.inter.rr
+      }
+      del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
+
+      # Stochastic transmission process
+      transmit <- rbinom(nrow(del.CC), 1, del.CC$finalProb)
+
+      # Keep rows where transmission occurred
+      del.CC <- del.CC[which(transmit == 1), ]
+
+      # Look up new ids if any transmissions occurred
+      idsNewInf.CtoC <- unique(del.CC$sus)
+      nInf.CtoC <- length(idsNewInf.CtoC)
+
+      # Set new attributes for those newly infected
+      if (nInf.CtoC > 0) {
+        dat$attr$status[idsNewInf.CtoC] <- "e"
+        dat$attr$infTime[idsNewInf.CtoC] <- at
+      }
+    }
+
     # Pass/Crew Contacts
-    del.PC <- discord_edgelist_covid(dat, nw = 2, contact.type = "pass.crew")
+    del.PC <- discord_edgelist_covid(dat, nw = 3, contact.type = "pass.crew")
     if (!(is.null(del.PC))) {
 
       ## Parameters ##
@@ -278,49 +318,9 @@ infect_covid <- function(dat, at) {
       }
     }
 
-    # Crew/Crew Contacts
-    del.CC <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
-    if (!(is.null(del.CC))) {
-
-      ## Parameters ##
-      inf.prob <- dat$param$inf.prob.cc
-      act.rate <- dat$param$act.rate.cc
-      inf.prob.cc.inter.rr <- dat$param$inf.prob.cc.inter.rr
-      inf.prob.cc.inter.time <- dat$param$inf.prob.cc.inter.time
-      act.rate.cc.inter.rr <- dat$param$act.rate.cc.inter.rr
-      act.rate.cc.inter.time <- dat$param$act.rate.cc.inter.time
-
-      # Set parameters on discordant edgelist data frame
-      del.CC$transProb <- inf.prob
-      if (at >= inf.prob.cc.inter.time) {
-        del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
-      }
-      del.CC$actRate <- act.rate
-      if (at >= act.rate.cc.inter.time) {
-        del.CC$actRate <- del.CC$actRate * act.rate.cc.inter.rr
-      }
-      del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
-
-      # Stochastic transmission process
-      transmit <- rbinom(nrow(del.CC), 1, del.CC$finalProb)
-
-      # Keep rows where transmission occurred
-      del.CC <- del.CC[which(transmit == 1), ]
-
-      # Look up new ids if any transmissions occurred
-      idsNewInf.CtoC <- unique(del.CC$sus)
-      nInf.CtoC <- length(idsNewInf.CtoC)
-
-      # Set new attributes for those newly infected
-      if (nInf.CtoC > 0) {
-        dat$attr$status[idsNewInf.CtoC] <- "e"
-        dat$attr$infTime[idsNewInf.CtoC] <- at
-      }
-    }
-
   }
 
-  ## Save summary statistic for S->E flow
+  ## Save summary statistics for S->E flow
   dat$epi$se.flow[at] <- nInf.PtoP + nInf.PtoC + nInf.CtoP + nInf.CtoC
   dat$epi$se.pp.flow[at] <- nInf.PtoP
   dat$epi$se.pc.flow[at] <- nInf.PtoC
@@ -330,24 +330,11 @@ infect_covid <- function(dat, at) {
   return(dat)
 }
 
-discord_edgelist_covid <- function(dat, nw = 1, contact.type = NULL) {
+discord_edgelist_covid <- function(dat, nw = 1) {
 
   status <- dat$attr$status
   type <- dat$attr$type
   el <- dat$el[[nw]]
-
-  if (!is.null(contact.type)) {
-    el.type <- matrix(type[el], ncol = 2)
-    if (contact.type == "pass.crew") {
-      subset.ids <- c(which(el.type[, 1] == "p" & el.type[, 2] == "c"),
-                      which(el.type[, 1] == "c" & el.type[, 2] == "p"))
-      el <- el[subset.ids, , drop = FALSE]
-    }
-    if (contact.type == "crew.crew") {
-      subset.ids <- which(el.type[, 1] == "c" & el.type[, 2] == "c")
-      el <- el[subset.ids, , drop = FALSE]
-    }
-  }
 
   del <- NULL
   if (nrow(el) > 0) {
