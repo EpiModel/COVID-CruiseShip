@@ -167,38 +167,41 @@ est <- readRDS("est/est.covid.rds")
 
 # Model parameters
 source("params.R")
-param <- param.net(inf.prob.pp = 0.5,
+param <- param.net(inf.prob.pp = 0.3,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = 15,
                    act.rate.pp = 10,
                    act.rate.pp.inter.rr = 1,
                    act.rate.pp.inter.time = 15,
-                   inf.prob.pc = 0.5 * 0.1,
+                   inf.prob.pc = 0.3,
                    inf.prob.pc.inter.rr = 1,
                    inf.prob.pc.inter.time = 15,
                    act.rate.pc = 3,
                    act.rate.pc.inter.rr = 1,
                    act.rate.pc.inter.time = 15,
-                   inf.prob.cc = 0.5,
+                   inf.prob.cc = 0.3,
                    inf.prob.cc.inter.rr = 1,
                    inf.prob.cc.inter.time = 15,
                    act.rate.cc = 2,
                    act.rate.cc.inter.rr = 1,
                    act.rate.cc.inter.time = 15,
-                   ei.rate = 1/5.2,
+                   inf.prob.sympt.rr = 2,
+                   ea.rate = 1/2,
+                   ai.rate = 1/3,
+                   ar.rate = 1/3,
                    ir.rate = 1/7,
                    mort.rates = mr_vec,
                    mort.dis.mult = 100)
 
 # Initial conditions
 init <- init.net(e.num.pass = 10,
-                 e.num.crew = 0)
+                 e.num.crew = 10)
 
 # Control settings
 source("module-fx.R", echo = FALSE)
 control <- control.net(nsteps = 60,
-                       nsims = 56,
-                       ncores = 7,
+                       nsims = 1,
+                       ncores = 1,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = dfunc_covid,

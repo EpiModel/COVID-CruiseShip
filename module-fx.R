@@ -93,8 +93,10 @@ init_status_covid <- function(dat) {
   # Infection Time
   idsInf <- which(status == "e")
   infTime <- rep(NA, length(status))
-  infTime[idsInf] <- -rgeom(n = length(idsInf), prob = mean(dat$param$ei.rate)) + 2
+  statusTime <- rep(NA, length(status))
+  statusTime[idsInf] <- 1
 
+  dat$attr$statusTime <- statusTime
   dat$attr$infTime <- infTime
 
   return(dat)
@@ -176,13 +178,18 @@ infect_covid <- function(dat, at) {
   ## Attributes ##
   active <- dat$attr$active
   status <- dat$attr$status
+  infTime <- dat$attr$infTime
+  statusTime <- dat$attr$statusTime
 
   ## Find infected nodes ##
-  idsInf <- which(active == 1 & status == "i")
+  idsInf <- which(active == 1 & status %in% c("a", "i"))
   nActive <- sum(active == 1)
   nElig <- length(idsInf)
 
-  ## Initialize default incidence at 0 ##
+  ## Common Parameters ##
+  inf.prob.sympt.rr <- dat$param$inf.prob.sympt.rr
+
+  ## Initialize default incidences at 0 ##
   nInf.PtoP <- 0
   nInf.PtoC <- 0
   nInf.CtoP <- 0
@@ -207,6 +214,9 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.PP$transProb <- inf.prob
+      del.PP$transProb[del.PP$stat == "i"] <- pmin(1,
+                                                   del.PP$transProb[del.PP$stat == "i"] *
+                                                     inf.prob.sympt.rr)
       if (at >= inf.prob.pp.inter.time) {
         del.PP$transProb <- del.PP$transProb * inf.prob.pp.inter.rr
       }
@@ -228,8 +238,9 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if (nInf.PtoP > 0) {
-        dat$attr$status[idsNewInf.PtoP] <- "e"
-        dat$attr$infTime[idsNewInf.PtoP] <- at
+        status[idsNewInf.PtoP] <- "e"
+        infTime[idsNewInf.PtoP] <- at
+        statusTime[idsNewInf.PtoP] <- at
       }
     }
 
@@ -247,6 +258,9 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.CC$transProb <- inf.prob
+      del.CC$transProb[del.CC$stat == "i"] <- pmin(1,
+                                                   del.CC$transProb[del.CC$stat == "i"] *
+                                                     inf.prob.sympt.rr)
       if (at >= inf.prob.cc.inter.time) {
         del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
       }
@@ -268,8 +282,9 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if (nInf.CtoC > 0) {
-        dat$attr$status[idsNewInf.CtoC] <- "e"
-        dat$attr$infTime[idsNewInf.CtoC] <- at
+        status[idsNewInf.CtoC] <- "e"
+        infTime[idsNewInf.CtoC] <- at
+        statusTime[idsNewInf.CtoC] <- at
       }
     }
 
@@ -287,6 +302,9 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.PC$transProb <- inf.prob
+      del.PC$transProb[del.PC$stat == "i"] <- pmin(1,
+                                                   del.PC$transProb[del.PC$stat == "i"] *
+                                                     inf.prob.sympt.rr)
       if (at >= inf.prob.pc.inter.time) {
         del.PC$transProb <- del.PC$transProb * inf.prob.pc.inter.rr
       }
@@ -314,12 +332,18 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if ((nInf.CtoP + nInf.PtoC) > 0) {
-        dat$attr$status[idsNewInf.PC] <- "e"
-        dat$attr$infTime[idsNewInf.PC] <- at
+        status[idsNewInf.PC] <- "e"
+        infTime[idsNewInf.PC] <- at
+        statusTime[idsNewInf.PC] <- at
       }
     }
 
   }
+
+  ## Write out attr
+  dat$attr$status <- status
+  dat$attr$infTime <- infTime
+  dat$attr$statusTime <- statusTime
 
   ## Save summary statistics for S->E flow
   dat$epi$se.flow[at] <- nInf.PtoP + nInf.PtoC + nInf.CtoP + nInf.CtoC
@@ -341,7 +365,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
   if (nrow(el) > 0) {
     el <- el[sample(1:nrow(el)), , drop = FALSE]
     stat <- matrix(status[el], ncol = 2)
-    isInf <- matrix(stat %in% "i", ncol = 2)
+    isInf <- matrix(stat %in% c("a", "i"), ncol = 2)
     isSus <- matrix(stat %in% "s", ncol = 2)
     SIpairs <- el[isSus[, 1] * isInf[, 2] == 1, , drop = FALSE]
     ISpairs <- el[isSus[, 2] * isInf[, 1] == 1, , drop = FALSE]
@@ -349,7 +373,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
     if (nrow(pairs) > 0) {
       sus <- pairs[, 1]
       inf <- pairs[, 2]
-      del <- data.frame(sus, inf)
+      del <- data.frame(sus = sus, inf = inf, stat = status[inf])
     }
   }
 
@@ -364,46 +388,79 @@ progress_covid <- function(dat, at) {
   ## Attributes ##
   active <- dat$attr$active
   status <- dat$attr$status
+  statusTime <- dat$attr$statusTime
 
   ## Parameters ##
-  ei.rate <- dat$param$ei.rate
+  ea.rate <- dat$param$ea.rate
+  ai.rate <- dat$param$ai.rate
+  ar.rate <- dat$param$ar.rate
   ir.rate <- dat$param$ir.rate
 
-  ## E to I progression process ##
-  nInf <- 0
-  idsEligInf <- which(active == 1 & status == "e")
-  nEligInf <- length(idsEligInf)
-
-  if (nEligInf > 0) {
-    vecInf <- which(rbinom(nEligInf, 1, ei.rate) == 1)
-    if (length(vecInf) > 0) {
-      idsInf <- idsEligInf[vecInf]
-      nInf <- length(idsInf)
-      status[idsInf] <- "i"
+  ## E to A progression: all latent move to asymptomatic infection A first
+  num.new.EtoA <- 0
+  ids.E <- which(active == 1 & status == "e" & statusTime < at)
+  num.E <- length(ids.E)
+  if (num.E > 0) {
+    vec.new.A <- which(rbinom(num.E, 1, ea.rate) == 1)
+    if (length(vec.new.A) > 0) {
+      ids.new.A <- ids.E[vec.new.A]
+      num.new.EtoA <- length(ids.new.A)
+      status[ids.new.A] <- "a"
+      statusTime[ids.new.A] <- at
     }
   }
 
-  ## I to R progression process ##
-  nRec <- 0
-  idsEligRec <- which(active == 1 & status == "i")
-  nEligRec <- length(idsEligRec)
-
-  if (nEligRec > 0) {
-    vecRec <- which(rbinom(nEligRec, 1, ir.rate) == 1)
-    if (length(vecRec) > 0) {
-      idsRec <- idsEligRec[vecRec]
-      nRec <- length(idsRec)
-      status[idsRec] <- "r"
+  ## A to I progression: some A move to symptomatic infection I
+  num.new.AtoI <- 0
+  ids.A <- which(active == 1 & status == "a" & statusTime < at)
+  num.A <- length(ids.A)
+  if (num.A > 0) {
+    vec.new.I <- which(rbinom(num.A, 1, ai.rate) == 1)
+    if (length(vec.new.I) > 0) {
+      ids.new.I <- ids.A[vec.new.I]
+      num.new.AtoI <- length(ids.new.I)
+      status[ids.new.A] <- "i"
+      statusTime[ids.new.I] <- at
     }
   }
 
-  ## Write out updated status attribute ##
+  ## A to R progression: some A move to recovered R
+  num.new.AtoR <- 0
+  ids.A <- which(active == 1 & status == "a" & statusTime < at)
+  num.A <- length(ids.A)
+  if (num.A > 0) {
+    vec.new.R <- which(rbinom(num.A, 1, ar.rate) == 1)
+    if (length(vec.new.R) > 0) {
+      ids.new.R <- ids.A[vec.new.R]
+      num.new.AtoR <- length(ids.new.R)
+      status[ids.new.R] <- "r"
+      statusTime[ids.new.R] <- at
+    }
+  }
+
+  ## I to R progression: all I move to recovered (if not mortality first)
+  num.new.ItoR <- 0
+  ids.I <- which(active == 1 & status == "i" & statusTime < at)
+  num.I <- length(ids.I)
+  if (num.I > 0) {
+    vec.new.R <- which(rbinom(num.I, 1, ir.rate) == 1)
+    if (length(vec.new.R) > 0) {
+      ids.new.R <- ids.I[vec.new.R]
+      num.new.ItoR <- length(ids.new.R)
+      status[ids.new.R] <- "r"
+      statusTime[ids.new.R] <- at
+    }
+  }
+
+  ## Save updated status attribute ##
   dat$attr$status <- status
+  dat$attr$statusTime <- statusTime
 
   ## Save summary statistics ##
-  dat$epi$ei.flow[at] <- nInf
-  dat$epi$ir.flow[at] <- nRec
-
+  dat$epi$ea.flow[at] <- num.new.EtoA
+  dat$epi$ai.flow[at] <- num.new.AtoI
+  dat$epi$ar.flow[at] <- num.new.AtoR
+  dat$epi$ir.flow[at] <- num.new.ItoR
 
   return(dat)
 }
@@ -420,9 +477,9 @@ prevalence_covid <- function(dat, at) {
   nsteps <- dat$control$nsteps
 
   # Initialize Outputs
-  var.names <- c("num", "s.num", "e.num", "i.num", "r.num",
+  var.names <- c("num", "s.num", "e.num", "a.num", "i.num", "r.num",
                  "i.pass.num", "i.crew.num",
-                 "se.flow", "ei.flow", "ir.flow", "d.flow",
+                 "ea.flow", "ai.flow", "ar.flow", "ir.flow", "d.flow",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge")
   if (at == 1) {
@@ -436,6 +493,7 @@ prevalence_covid <- function(dat, at) {
 
   dat$epi$s.num[at] <- sum(active == 1 & status == "s")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
+  dat$epi$a.num[at] <- sum(active == 1 & status == "a")
   dat$epi$i.num[at] <- sum(active == 1 & status == "i")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
 
