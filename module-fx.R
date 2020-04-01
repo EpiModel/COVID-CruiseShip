@@ -1,6 +1,7 @@
 
 ##
 ## COVID-19 Cruise Ship Network Model
+## Model Functions
 ##
 ## Authors: Samuel M. Jenness
 ## Date: February 2020
@@ -191,7 +192,7 @@ infect_covid <- function(dat, at) {
   if (length(idsInf) > 0) {
 
     ## Look up discordant edgelist ##
-    del.PP <- discord_edgelist_covid(dat, nw = 1, contact.type = NULL)
+    del.PP <- discord_edgelist_covid(dat, nw = 1)
 
     ## If any discordant pairs, proceed ##
     if (!(is.null(del.PP))) {
@@ -233,7 +234,7 @@ infect_covid <- function(dat, at) {
     }
 
     # Crew/Crew Contacts
-    del.CC <- discord_edgelist_covid(dat, nw = 2, contact.type = "crew.crew")
+    del.CC <- discord_edgelist_covid(dat, nw = 2)
     if (!(is.null(del.CC))) {
 
       ## Parameters ##
@@ -273,7 +274,7 @@ infect_covid <- function(dat, at) {
     }
 
     # Pass/Crew Contacts
-    del.PC <- discord_edgelist_covid(dat, nw = 3, contact.type = "pass.crew")
+    del.PC <- discord_edgelist_covid(dat, nw = 3)
     if (!(is.null(del.PC))) {
 
       ## Parameters ##
