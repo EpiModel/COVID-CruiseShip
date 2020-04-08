@@ -99,6 +99,7 @@ init_status_covid <- function(dat) {
 
   dat$attr$statusTime <- statusTime
   dat$attr$infTime <- infTime
+  dat$attr$clinical <- clinical
 
   return(dat)
 }
@@ -183,12 +184,13 @@ infect_covid <- function(dat, at) {
   statusTime <- dat$attr$statusTime
 
   ## Find infected nodes ##
-  idsInf <- which(active == 1 & status %in% c("a", "i"))
+  idsInf <- which(active == 1 & status %in% c("a", "ic", "ip"))
   nActive <- sum(active == 1)
   nElig <- length(idsInf)
 
   ## Common Parameters ##
   inf.prob.sympt.rr <- dat$param$inf.prob.sympt.rr
+  inf.prob.a.rr <- dat$param$inf.prob.a.rr
 
   ## Initialize default incidences at 0 ##
   nInf.PtoP <- 0
@@ -215,9 +217,8 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.PP$transProb <- inf.prob
-      del.PP$transProb[del.PP$stat == "i"] <- pmin(1,
-                                                   del.PP$transProb[del.PP$stat == "i"] *
-                                                     inf.prob.sympt.rr)
+      del.PP$transProb[del.PP$stat == "a"] <- del.PP$transProb[del.PP$stat == "a"] *
+                                              inf.prob.a.rr
       if (at >= inf.prob.pp.inter.time) {
         del.PP$transProb <- del.PP$transProb * inf.prob.pp.inter.rr
       }
@@ -259,9 +260,8 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.CC$transProb <- inf.prob
-      del.CC$transProb[del.CC$stat == "i"] <- pmin(1,
-                                                   del.CC$transProb[del.CC$stat == "i"] *
-                                                     inf.prob.sympt.rr)
+      del.CC$transProb[del.CC$stat == "a"] <- del.CC$transProb[del.CC$stat == "a"] *
+                                              inf.prob.a.rr
       if (at >= inf.prob.cc.inter.time) {
         del.CC$transProb <- del.CC$transProb * inf.prob.cc.inter.rr
       }
@@ -303,9 +303,8 @@ infect_covid <- function(dat, at) {
 
       # Set parameters on discordant edgelist data frame
       del.PC$transProb <- inf.prob
-      del.PC$transProb[del.PC$stat == "i"] <- pmin(1,
-                                                   del.PC$transProb[del.PC$stat == "i"] *
-                                                     inf.prob.sympt.rr)
+      del.PC$transProb[del.PC$stat == "a"] <- del.PC$transProb[del.PC$stat == "a"] *
+                                              inf.prob.a.rr
       if (at >= inf.prob.pc.inter.time) {
         del.PC$transProb <- del.PC$transProb * inf.prob.pc.inter.rr
       }
@@ -338,7 +337,6 @@ infect_covid <- function(dat, at) {
         statusTime[idsNewInf.PC] <- at
       }
     }
-
   }
 
   ## Write out attr
@@ -366,7 +364,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
   if (nrow(el) > 0) {
     el <- el[sample(1:nrow(el)), , drop = FALSE]
     stat <- matrix(status[el], ncol = 2)
-    isInf <- matrix(stat %in% c("a", "i"), ncol = 2)
+    isInf <- matrix(stat %in% c("a", "ic", "ip"), ncol = 2)
     isSus <- matrix(stat %in% "s", ncol = 2)
     SIpairs <- el[isSus[, 1] * isInf[, 2] == 1, , drop = FALSE]
     ISpairs <- el[isSus[, 2] * isInf[, 1] == 1, , drop = FALSE]
@@ -402,7 +400,8 @@ progress_covid <- function(dat, at) {
   icr.rate <- dat$param$icr.rate
 
   ## Determine Subclinical (E to A) or Clinical (E to Ip to Ic) pathway
-  ids.newInf <- which(active == 1 & status == "e" & infTime <= at)
+  # browser()
+  ids.newInf <- which(active == 1 & status == "e" & statusTime <= at & is.na(clinical))
   num.newInf <- length(ids.newInf)
   if (num.newInf > 0) {
     vec.new.clinical <- rbinom(num.newInf, 1, prop.clinical)
@@ -442,7 +441,7 @@ progress_covid <- function(dat, at) {
   ## Clinical Pathway
   # E to Ip: latent move to preclinical infectious
   num.new.EtoIp <- 0
-  ids.Ec <- which(active == 1 & status == "a" & statusTime < at & clinical == 1)
+  ids.Ec <- which(active == 1 & status == "e" & statusTime < at & clinical == 1)
   num.Ec <- length(ids.Ec)
   if (num.Ec > 0) {
     vec.new.Ip <- which(rbinom(num.Ec, 1, eip.rate) == 1)
@@ -470,7 +469,7 @@ progress_covid <- function(dat, at) {
 
   # Ic to R: clinical infectious move to recovered (if not mortality first)
   num.new.IctoR <- 0
-  ids.Ic <- which(active == 1 & status == "i" & statusTime < at & clinical == 1)
+  ids.Ic <- which(active == 1 & status == "ic" & statusTime < at & clinical == 1)
   num.Ic <- length(ids.Ic)
   if (num.Ic > 0) {
     vec.new.R <- which(rbinom(num.Ic, 1, icr.rate) == 1)
@@ -485,6 +484,7 @@ progress_covid <- function(dat, at) {
   ## Save updated status attribute
   dat$attr$status <- status
   dat$attr$statusTime <- statusTime
+  dat$attr$clinical <- clinical
 
   ## Save summary statistics
   dat$epi$ea.flow[at] <- num.new.EtoA
@@ -509,13 +509,13 @@ prevalence_covid <- function(dat, at) {
   nsteps <- dat$control$nsteps
 
   # Initialize Outputs
-  var.names <- c("num", "s.num", "e.num", "a.num", "i.num", "r.num",
+  var.names <- c("num", "s.num", "e.num", "a.num", "ip.num", "ic.num", "r.num",
                  "i.pass.num", "i.crew.num",
                  "ea.flow", "ar.flow",
                  "eip.flow", "ipic.flow", "icr.flow",
                  "d.flow",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
-                 "meanAge")
+                 "meanAge", "prop.clinical")
   if (at == 1) {
     for (i in 1:length(var.names)) {
       dat$epi[[var.names[i]]] <- rep(0, nsteps)
@@ -528,13 +528,15 @@ prevalence_covid <- function(dat, at) {
   dat$epi$s.num[at] <- sum(active == 1 & status == "s")
   dat$epi$e.num[at] <- sum(active == 1 & status == "e")
   dat$epi$a.num[at] <- sum(active == 1 & status == "a")
-  dat$epi$i.num[at] <- sum(active == 1 & status == "i")
+  dat$epi$ip.num[at] <- sum(active == 1 & status == "ip")
+  dat$epi$ic.num[at] <- sum(active == 1 & status == "ic")
   dat$epi$r.num[at] <- sum(active == 1 & status == "r")
 
-  dat$epi$i.pass.num[at] <- sum(active == 1 & status == "i" & type == "p")
-  dat$epi$i.crew.num[at] <- sum(active == 1 & status == "i" & type == "c")
+  dat$epi$i.pass.num[at] <- sum(active == 1 & status %in% c("ip", "ic", "a") & type == "p")
+  dat$epi$i.crew.num[at] <- sum(active == 1 & status %in% c("ip", "ic", "a") & type == "c")
 
   dat$epi$meanAge[at] <- mean(dat$attr$age, na.rm = TRUE)
+  dat$epi$meanClinical[at] <- mean(dat$attr$clinical, na.rm = TRUE)
 
   return(dat)
 }
@@ -572,7 +574,7 @@ dfunc_covid <- function(dat, at) {
     whole_ages_of_elig <- pmin(ceiling(age[idsElig]), 86)
     death_rates_of_elig <- mort.rates[whole_ages_of_elig]
 
-    idsElig.inf <- which(status[idsElig] == "i")
+    idsElig.inf <- which(status[idsElig] == "ic")
     death_rates_of_elig[idsElig.inf] <- death_rates_of_elig[idsElig.inf] * mort.dis.mult
 
     vecDeaths <- which(rbinom(nElig, 1, death_rates_of_elig) == 1)
