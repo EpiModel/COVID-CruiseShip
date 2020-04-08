@@ -231,6 +231,8 @@ summary(colSums(sim$epi$se.flow))
 # Plot outcomes
 par(mar = c(3,3,1,1), mgp = c(2,1,0))
 pal <- RColorBrewer::brewer.pal(9, "Set1")
+pal <- rainbow(9)
+pal <- 1:9
 
 plot(sim,
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
@@ -242,7 +244,17 @@ plot(sim, y = c("i.pass.num", "i.crew.num"),
      qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
-plot(sim, y = c("se.flow", "ei.flow", "ir.flow"),
+plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
+     legend = TRUE)
+
+plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
+     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
+     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
+     legend = TRUE)
+
+plot(sim, y = c("se.flow", "eip.flow", "ipic.flow", "icr.flow"),
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
@@ -255,5 +267,3 @@ plot(sim, y = "d.flow",
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
-
-
