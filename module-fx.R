@@ -93,6 +93,7 @@ init_status_covid <- function(dat) {
   # Infection Time
   idsInf <- which(status == "e")
   infTime <- rep(NA, length(status))
+  clinical <- rep(NA, length(status))
   statusTime <- rep(NA, length(status))
   statusTime[idsInf] <- 1
 
@@ -385,48 +386,48 @@ discord_edgelist_covid <- function(dat, nw = 1) {
 
 progress_covid <- function(dat, at) {
 
-  ## Attributes ##
+  ## Attributes
   active <- dat$attr$active
   status <- dat$attr$status
   statusTime <- dat$attr$statusTime
+  infTime <- dat$attr$infTime
+  clinical <- dat$attr$clinical
 
-  ## Parameters ##
+  ## Parameters
+  prop.clinical <- dat$param$prop.clinical
   ea.rate <- dat$param$ea.rate
-  ai.rate <- dat$param$ai.rate
   ar.rate <- dat$param$ar.rate
-  ir.rate <- dat$param$ir.rate
+  eip.rate <- dat$param$eip.rate
+  ipic.rate <- dat$param$ipic.rate
+  icr.rate <- dat$param$icr.rate
 
-  ## E to A progression: all latent move to asymptomatic infection A first
+  ## Determine Subclinical (E to A) or Clinical (E to Ip to Ic) pathway
+  ids.newInf <- which(active == 1 & status == "e" & infTime <= at)
+  num.newInf <- length(ids.newInf)
+  if (num.newInf > 0) {
+    vec.new.clinical <- rbinom(num.newInf, 1, prop.clinical)
+    clinical[ids.newInf] <- vec.new.clinical
+  }
+  if (any(status == "e" & is.na(clinical))) browser()
+
+  ## Subclinical Pathway
+  # E to A: latent move to asymptomatic infectious
   num.new.EtoA <- 0
-  ids.E <- which(active == 1 & status == "e" & statusTime < at)
-  num.E <- length(ids.E)
-  if (num.E > 0) {
-    vec.new.A <- which(rbinom(num.E, 1, ea.rate) == 1)
+  ids.Es <- which(active == 1 & status == "e" & statusTime < at & clinical == 0)
+  num.Es <- length(ids.Es)
+  if (num.Es > 0) {
+    vec.new.A <- which(rbinom(num.Es, 1, ea.rate) == 1)
     if (length(vec.new.A) > 0) {
-      ids.new.A <- ids.E[vec.new.A]
+      ids.new.A <- ids.Es[vec.new.A]
       num.new.EtoA <- length(ids.new.A)
       status[ids.new.A] <- "a"
       statusTime[ids.new.A] <- at
     }
   }
 
-  ## A to I progression: some A move to symptomatic infection I
-  num.new.AtoI <- 0
-  ids.A <- which(active == 1 & status == "a" & statusTime < at)
-  num.A <- length(ids.A)
-  if (num.A > 0) {
-    vec.new.I <- which(rbinom(num.A, 1, ai.rate) == 1)
-    if (length(vec.new.I) > 0) {
-      ids.new.I <- ids.A[vec.new.I]
-      num.new.AtoI <- length(ids.new.I)
-      status[ids.new.A] <- "i"
-      statusTime[ids.new.I] <- at
-    }
-  }
-
-  ## A to R progression: some A move to recovered R
+  # A to R: asymptomatic infectious move to recovered
   num.new.AtoR <- 0
-  ids.A <- which(active == 1 & status == "a" & statusTime < at)
+  ids.A <- which(active == 1 & status == "a" & statusTime < at & clinical == 0)
   num.A <- length(ids.A)
   if (num.A > 0) {
     vec.new.R <- which(rbinom(num.A, 1, ar.rate) == 1)
@@ -438,29 +439,60 @@ progress_covid <- function(dat, at) {
     }
   }
 
-  ## I to R progression: all I move to recovered (if not mortality first)
-  num.new.ItoR <- 0
-  ids.I <- which(active == 1 & status == "i" & statusTime < at)
-  num.I <- length(ids.I)
-  if (num.I > 0) {
-    vec.new.R <- which(rbinom(num.I, 1, ir.rate) == 1)
+  ## Clinical Pathway
+  # E to Ip: latent move to preclinical infectious
+  num.new.EtoIp <- 0
+  ids.Ec <- which(active == 1 & status == "a" & statusTime < at & clinical == 1)
+  num.Ec <- length(ids.Ec)
+  if (num.Ec > 0) {
+    vec.new.Ip <- which(rbinom(num.Ec, 1, eip.rate) == 1)
+    if (length(vec.new.Ip) > 0) {
+      ids.new.Ip <- ids.Ec[vec.new.Ip]
+      num.new.EtoIp <- length(ids.new.Ip)
+      status[ids.new.Ip] <- "ip"
+      statusTime[ids.new.Ip] <- at
+    }
+  }
+
+  # Ip to Ic: preclinical infectious move to clinical infectious
+  num.new.IptoIc <- 0
+  ids.Ip <- which(active == 1 & status == "ip" & statusTime < at & clinical == 1)
+  num.Ip <- length(ids.Ip)
+  if (num.Ip > 0) {
+    vec.new.Ic <- which(rbinom(num.Ip, 1, ipic.rate) == 1)
+    if (length(vec.new.Ic) > 0) {
+      ids.new.Ic <- ids.Ip[vec.new.Ic]
+      num.new.IptoIc <- length(ids.new.Ic)
+      status[ids.new.Ic] <- "ic"
+      statusTime[ids.new.Ic] <- at
+    }
+  }
+
+  # Ic to R: clinical infectious move to recovered (if not mortality first)
+  num.new.IctoR <- 0
+  ids.Ic <- which(active == 1 & status == "i" & statusTime < at & clinical == 1)
+  num.Ic <- length(ids.Ic)
+  if (num.Ic > 0) {
+    vec.new.R <- which(rbinom(num.Ic, 1, icr.rate) == 1)
     if (length(vec.new.R) > 0) {
-      ids.new.R <- ids.I[vec.new.R]
-      num.new.ItoR <- length(ids.new.R)
+      ids.new.R <- ids.Ic[vec.new.R]
+      num.new.IctoR <- length(ids.new.R)
       status[ids.new.R] <- "r"
       statusTime[ids.new.R] <- at
     }
   }
 
-  ## Save updated status attribute ##
+  ## Save updated status attribute
   dat$attr$status <- status
   dat$attr$statusTime <- statusTime
 
-  ## Save summary statistics ##
+  ## Save summary statistics
   dat$epi$ea.flow[at] <- num.new.EtoA
-  dat$epi$ai.flow[at] <- num.new.AtoI
   dat$epi$ar.flow[at] <- num.new.AtoR
-  dat$epi$ir.flow[at] <- num.new.ItoR
+
+  dat$epi$eip.flow[at] <- num.new.EtoIp
+  dat$epi$ipic.flow[at] <- num.new.IptoIc
+  dat$epi$icr.flow[at] <- num.new.IctoR
 
   return(dat)
 }
@@ -479,7 +511,9 @@ prevalence_covid <- function(dat, at) {
   # Initialize Outputs
   var.names <- c("num", "s.num", "e.num", "a.num", "i.num", "r.num",
                  "i.pass.num", "i.crew.num",
-                 "ea.flow", "ai.flow", "ar.flow", "ir.flow", "d.flow",
+                 "ea.flow", "ar.flow",
+                 "eip.flow", "ipic.flow", "icr.flow",
+                 "d.flow",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge")
   if (at == 1) {
