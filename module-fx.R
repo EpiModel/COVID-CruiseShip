@@ -554,7 +554,7 @@ aging_covid <- function(dat, at) {
 
 # Mortality Module --------------------------------------------------------
 
-dfunc_covid <- function(dat, at) {
+deaths_covid <- function(dat, at) {
 
   ## Attributes ##
   active <- dat$attr$active
