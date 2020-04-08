@@ -511,11 +511,11 @@ prevalence_covid <- function(dat, at) {
   # Initialize Outputs
   var.names <- c("num", "s.num", "e.num", "a.num", "ip.num", "ic.num", "r.num",
                  "i.pass.num", "i.crew.num",
-                 "ea.flow", "ar.flow",
+                 "se.flow", "ea.flow", "ar.flow",
                  "eip.flow", "ipic.flow", "icr.flow",
                  "d.flow",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
-                 "meanAge", "prop.clinical")
+                 "meanAge", "meanClinic")
   if (at == 1) {
     for (i in 1:length(var.names)) {
       dat$epi[[var.names[i]]] <- rep(0, nsteps)
@@ -536,7 +536,7 @@ prevalence_covid <- function(dat, at) {
   dat$epi$i.crew.num[at] <- sum(active == 1 & status %in% c("ip", "ic", "a") & type == "c")
 
   dat$epi$meanAge[at] <- mean(dat$attr$age, na.rm = TRUE)
-  dat$epi$meanClinical[at] <- mean(dat$attr$clinical, na.rm = TRUE)
+  dat$epi$meanClinic[at] <- mean(dat$attr$clinical, na.rm = TRUE)
 
   return(dat)
 }
