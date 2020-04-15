@@ -33,6 +33,28 @@ table(room.ids.pass)
 
 type.attr <- rep(c("p", "c"), times = c(n.pass, n.crew))
 
+crew.ids <- which(nw %v% "type" == "c")
+crew.ids
+room.ids
+
+n.sectors <- 10
+room.sectors <- apportion_lr(length(room.ids), 1:n.sectors,
+                             rep(1/n.sectors, n.sectors))
+# head(data.frame(room.ids, room.sectors), 200)
+df.match <- data.frame(room.ids, room.sectors)
+
+sector <- rep(NA, n)
+for (id in pass.ids) {
+  sector[id] <- df.match[df.match$room.ids == room.ids.pass[id], "room.sectors"]
+}
+sector[pass.ids]
+
+room.sectors.c <- apportion_lr(length(crew.ids), 1:n.sectors,
+                               rep(1/n.sectors, n.sectors), shuffled = TRUE)
+sector[crew.ids] <- room.sectors.c
+sector[crew.ids]
+sector
+
 # median age for crew was 36 (IQR:29-43) and
 # the median age of the passengers was 69 (IQR: 62-73)
 ages.pass <- round(rnorm(n.pass, 69, 6), 1)
@@ -52,6 +74,7 @@ nw <- network.initialize(n, directed = FALSE)
 nw <- set.vertex.attribute(nw, "type", type.attr)
 nw <- set.vertex.attribute(nw, "pass.room", room.ids.pass, pass.ids)
 nw <- set.vertex.attribute(nw, "age", age)
+nw <- set.vertex.attribute(nw, "sector", sector)
 
 # Model 1: pass/pass contacts within rooms each day
 
@@ -60,8 +83,8 @@ formation <- ~edges +
               nodematch("pass.room") +
               offset(nodefactor("type", levels = -2))
 
-# Input the appropriate target statistics for each term
-# about one persistent pass/pass contact
+# Input target statistics for each term
+# one persistent pass/pass contact (isolation)
 md <- 1
 edges <- n.pass * md/2
 absdiff <- edges * 5
@@ -104,15 +127,16 @@ print(dx1a.pre)
 
 # about 2 ongoing contacts a day, but max at 3
 formation2 <- ~edges +
+               nodematch("sector") +
                offset(degrange(from = 4)) +
                offset(nodefactor("type", levels = -1))
 
 md <- 2
 edges <- n.crew * md/2
-target.stats2 <- c(edges)
+target.stats2 <- c(edges, edges)
 
 # Dissolution model
-coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 100)
+coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 coef.diss2
 
 # Fit the model
@@ -121,35 +145,19 @@ est2 <- netest(nw, formation2, target.stats2, coef.diss2, coef.form = c(-Inf, -I
 summary(est2)
 mcmc.diagnostics(est2$fit)
 
-dx2a <- netdx(est2, nsims = 1000, dynamic = FALSE,
+dx2a <- netdx(est2, nsims = 1e4, dynamic = FALSE,
              nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx2a)
 plot(dx2a, sim.lines = TRUE)
 
-dx2b <- netdx(est2, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
-              nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx2b)
-
-dx2c <- netdx(est2, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
-             keep.tnetwork = TRUE)
-dx2c
-df <- as.data.frame(get_network(dx2c))
-df[which(df$onset.censored == FALSE | df$terminus.censored == FALSE), ]
-table(c(df$tail, df$head))
-summary(as.numeric(table(c(df$tail, df$head))))
-
 
 ## Model 3: crew/pass contacts each day
 
-# crew/pass contacts: 3 times a day x 2 workers x each room x average 2 people per room
-# 3 times a day will go into act rate
-# assume making contact with one person per room
-cp.edges <- 2*n.rooms/2
+# crew/pass contacts:
+# 3 times a day
+cp.edges <- 3*n.rooms
 
-formation3 <- ~edges + nodematch("type") + degrange(from = 3)
-target.stats3 <- c(cp, 0, 0)
 
 coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
@@ -158,13 +166,31 @@ est3 <- netest(nw, formation3, target.stats3, coef.diss3,
 summary(est3)
 mcmc.diagnostics(est3$fit)
 
-dx3a <- netdx(est3, nsims = 10000, dynamic = FALSE,
+dx3a <- netdx(est3, nsims = 1e4, dynamic = FALSE,
               nwstats.formula = ~edges + nodemix("type", levels = NULL))
 print(dx3a)
-plot(dx3a, sim.lines = TRUE)
 
+# sim1 <- simulate(est3$fit)
+# sim1
+# el1 <- as.edgelist(sim1)
+# head(el1, 25)
+# matrix(type[el1], ncol = 2)
+# summary(sim1 ~ degree(0, by = "type"))
+# # table(tabulate(pass.room[el1[, 1]], n.rooms))
+# summary(get_degree(el1)[pass.ids])
+# summary(get_degree(el1)[crew.ids])
+# n.rooms/n.crew
+
+## save out the data
+
+# post isolation
 est <- list(est1, est2, est3)
 saveRDS(est, file = "est/est.covid.rds")
+
+# pre isolation
+# est <- list(est1.pre, est2, est3)
+# saveRDS(est, file = "est/est.pre.covid.rds")
+
 
 
 # Epidemic model simulation -----------------------------------------------
@@ -200,7 +226,7 @@ param <- param.net(inf.prob.pp = 0.3,
                    ipic.rate = 1/5,
                    icr.rate = 1/2,
                    mort.rates = mr_vec,
-                   mort.dis.mult = 100)
+                   mort.dis.mult = 1000)
 
 # Initial conditions
 init <- init.net(e.num.pass = 10,
