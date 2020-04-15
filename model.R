@@ -103,21 +103,21 @@ print(dx1a.pre)
 ## Model 2: crew/crew contacts each day
 
 # about 2 ongoing contacts a day, but max at 3
-formation2 <- ~edges + degrange(from = 4) + nodefactor("type", levels = -1)
+formation2 <- ~edges +
+               offset(degrange(from = 4)) +
+               offset(nodefactor("type", levels = -1))
 
 md <- 2
 edges <- n.crew * md/2
-target.stats2 <- c(edges, 0, 0)
+target.stats2 <- c(edges)
 
-# Assume longer duration
+# Dissolution model
 coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 100)
 coef.diss2
 
 # Fit the model
-est2 <- netest(nw, formation2, target.stats2, coef.diss2,
-               set.control.ergm = control.ergm(MCMLE.maxit = 500,
-                                               MCMC.interval = 3e4,
-                                               MCMC.burnin = 2e6))
+est2 <- netest(nw, formation2, target.stats2, coef.diss2, coef.form = c(-Inf, -Inf),
+               set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est2)
 mcmc.diagnostics(est2$fit)
 
