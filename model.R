@@ -245,8 +245,8 @@ init <- init.net(e.num.pass = 10,
 # Control settings
 source("module-fx.R", echo = FALSE)
 control <- control.net(nsteps = 60,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = 7,
+                       ncores = 7,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = deaths_covid,
@@ -269,7 +269,13 @@ sim <- netsim(est, param, init, control)
 print(sim)
 
 df <- as.data.frame(sim, out = "mean")
-round(df, 1)
+round(df, 2)
+
+# 8.2 deaths expected
+sum(df$d.flow)
+sum(df$se.flow)
+
+(sum(df$d.flow)-8.2)/sum(df$se.flow)
 
 sum(df$se.flow)
 summary(colSums(sim$epi$se.flow))

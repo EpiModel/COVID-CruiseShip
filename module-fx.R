@@ -97,11 +97,13 @@ init_status_covid <- function(dat) {
   statusTime <- rep(NA, length(status))
   statusTime[idsInf] <- 1
   dxStatus <- rep(0, length(status))
+  transmissions <- rep(0, length(status))
 
   dat$attr$statusTime <- statusTime
   dat$attr$infTime <- infTime
   dat$attr$clinical <- clinical
   dat$attr$dxStatus <- dxStatus
+  dat$attr$transmissions <- transmissions
 
   return(dat)
 }
@@ -184,6 +186,7 @@ infect_covid <- function(dat, at) {
   status <- dat$attr$status
   infTime <- dat$attr$infTime
   statusTime <- dat$attr$statusTime
+  transmissions <- dat$attr$transmissions
 
   ## Find infected nodes ##
   idsInf <- which(active == 1 & status %in% c("a", "ic", "ip"))
@@ -239,12 +242,14 @@ infect_covid <- function(dat, at) {
       # Look up new ids if any transmissions occurred
       idsNewInf.PtoP <- unique(del.PP$sus)
       nInf.PtoP <- length(idsNewInf.PtoP)
+      transIds <- del.PP$inf
 
       # Set new attributes for those newly infected
       if (nInf.PtoP > 0) {
         status[idsNewInf.PtoP] <- "e"
         infTime[idsNewInf.PtoP] <- at
         statusTime[idsNewInf.PtoP] <- at
+        transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
 
@@ -282,12 +287,14 @@ infect_covid <- function(dat, at) {
       # Look up new ids if any transmissions occurred
       idsNewInf.CtoC <- unique(del.CC$sus)
       nInf.CtoC <- length(idsNewInf.CtoC)
+      transIds <- del.CC$inf
 
       # Set new attributes for those newly infected
       if (nInf.CtoC > 0) {
         status[idsNewInf.CtoC] <- "e"
         infTime[idsNewInf.CtoC] <- at
         statusTime[idsNewInf.CtoC] <- at
+        transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
 
@@ -331,12 +338,14 @@ infect_covid <- function(dat, at) {
 
       # Either direction
       idsNewInf.PC <- union(idsNewInf.CtoP, idsNewInf.PtoC)
+      transIds <- del.PC$inf
 
       # Set new attributes for those newly infected
       if ((nInf.CtoP + nInf.PtoC) > 0) {
         status[idsNewInf.PC] <- "e"
         infTime[idsNewInf.PC] <- at
         statusTime[idsNewInf.PC] <- at
+        transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
   }
@@ -345,6 +354,7 @@ infect_covid <- function(dat, at) {
   dat$attr$status <- status
   dat$attr$infTime <- infTime
   dat$attr$statusTime <- statusTime
+  dat$attr$transmissions <- transmissions
 
   ## Save summary statistics for S->E flow
   dat$epi$se.flow[at] <- nInf.PtoP + nInf.PtoC + nInf.CtoP + nInf.CtoC
@@ -352,7 +362,7 @@ infect_covid <- function(dat, at) {
   dat$epi$se.pc.flow[at] <- nInf.PtoC
   dat$epi$se.cp.flow[at] <- nInf.CtoP
   dat$epi$se.cc.flow[at] <- nInf.CtoC
-
+  dat$epi$Rt[at] <- mean(transmissions[status %in% c("a", "ip", "ic", "r")])
   return(dat)
 }
 
@@ -500,7 +510,6 @@ progress_covid <- function(dat, at) {
 }
 
 
-
 # Diagnosis Module --------------------------------------------------------
 
 dx_covid <- function(dat, at) {
@@ -549,7 +558,7 @@ prevalence_covid <- function(dat, at) {
   # Initialize Outputs
   var.names <- c("num", "s.num", "e.num", "a.num", "ip.num", "ic.num", "r.num",
                  "i.pass.num", "i.crew.num",
-                 "se.flow", "ea.flow", "ar.flow",
+                 "se.flow", "ea.flow", "ar.flow", "Rt",
                  "eip.flow", "ipic.flow", "icr.flow",
                  "d.flow", "exit.flow", "new.dx",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
