@@ -7,6 +7,7 @@
 ##
 
 ## Load EpiModel
+remotes::install_github("statnet/EpiModel")
 library("EpiModel")
 library("tergmLite")
 
@@ -23,6 +24,12 @@ n <- n.crew + n.pass
 n.rooms <- 1337
 n.pass.per.room <- n.pass/n.rooms
 n.pass.per.room
+
+pass.ids <- 1:n.pass
+
+room.ids <- 1:n.rooms
+room.ids.pass <- apportion_lr(n.pass, room.ids, rep(1/n.rooms, n.rooms))
+table(room.ids.pass)
 
 type.attr <- rep(c("p", "c"), times = c(n.pass, n.crew))
 
@@ -49,48 +56,48 @@ nw <- set.vertex.attribute(nw, "age", age)
 # Model 1: pass/pass contacts within rooms each day
 
 # Define the formation model
-formation = ~edges + concurrent + nodefactor("type", levels = -2) + absdiff("age")
+formation <- ~edges +
+              nodematch("pass.room") +
+              offset(nodefactor("type", levels = -2))
 
 # Input the appropriate target statistics for each term
 # about one persistent pass/pass contact
-md <- 0.98
+md <- 1
 edges <- n.pass * md/2
 absdiff <- edges * 5
 
-target.stats <- c(edges, 0, 0, absdiff)
+pre.isolation.scale <- c(2, 1)
+
+target.stats <- c(edges, edges)
+target.stats.pre <- target.stats * pre.isolation.scale
 
 # Parameterize the dissolution model
-coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 25000)
+coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 coef.diss
 
 # Fit the model
-est1 <- netest(nw, formation, target.stats, coef.diss,
-               set.control.ergm = control.ergm(MCMLE.maxit = 500,
-                                               MCMC.interval = 3e4,
-                                               MCMC.burnin = 2e6))
+est1 <- netest(nw, formation, target.stats, coef.diss, coef.form = -Inf,
+               set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est1)
 mcmc.diagnostics(est1$fit)
 
 # Model diagnostics
-dx1a <- netdx(est1, nsims = 1000, dynamic = FALSE,
+dx1a <- netdx(est1, nsims = 1e4, dynamic = FALSE,
               nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
               set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1a)
 plot(dx1a, sim.lines = TRUE)
 
-dx1b <- netdx(est1, nsims = 10, ncores = 5, nsteps = 500, dynamic = TRUE,
-              nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx1b)
-plot(dx1b)
+# Pre-isolation model
+est1.pre <- netest(nw, formation, target.stats.pre, coef.diss, coef.form = -Inf,
+               set.control.ergm = control.ergm(MCMLE.maxit = 500))
+summary(est1.pre)
+mcmc.diagnostics(est1.pre$fit)
 
-dx1c <- netdx(est1, nsims = 1, ncores = 1, nsteps = 100, dynamic = TRUE,
-              keep.tnetwork = TRUE)
-dx1c
-df <- as.data.frame(get_network(dx1c))
-df[which(df$onset.censored == FALSE | df$terminus.censored == FALSE), ]
-table(c(df$tail, df$head))
-summary(as.numeric(table(c(df$tail, df$head))))
+dx1a.pre <- netdx(est1.pre, nsims = 1e4, dynamic = FALSE,
+              nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
+              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx1a.pre)
 
 
 ## Model 2: crew/crew contacts each day
