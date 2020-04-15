@@ -96,10 +96,12 @@ init_status_covid <- function(dat) {
   clinical <- rep(NA, length(status))
   statusTime <- rep(NA, length(status))
   statusTime[idsInf] <- 1
+  dxStatus <- rep(0, length(status))
 
   dat$attr$statusTime <- statusTime
   dat$attr$infTime <- infTime
   dat$attr$clinical <- clinical
+  dat$attr$dxStatus <- dxStatus
 
   return(dat)
 }
@@ -498,6 +500,42 @@ progress_covid <- function(dat, at) {
 }
 
 
+
+# Diagnosis Module --------------------------------------------------------
+
+dx_covid <- function(dat, at) {
+
+  active <- dat$attr$active
+  status <- dat$attr$status
+  type <- dat$attr$type
+  dxStatus <- dat$attr$dxStatus
+
+  dx.start <- dat$param$dx.start
+  dx.rate.pass <- dat$param$dx.rate.pass
+  dx.rate.crew <- dat$param$dx.rate.crew
+  dx.elig.status <- dat$param$dx.elig.status
+
+  idsElig <- which(active == 1 & dxStatus == 0 & status %in% dx.elig.status)
+  nElig <- length(idsElig)
+  nDx <- 0
+
+  if (at >= dx.start & nElig > 0) {
+    dx.rates <- ifelse(type[idsElig] == "p", dx.rate.pass, dx.rate.crew)
+    vecDx <- which(rbinom(nElig, 1, dx.rates) == 1)
+    idsDx <- idsElig[vecDx]
+    nDx <- length(idsDx)
+    if (nDx > 0) {
+      dxStatus[idsDx] <- 1
+    }
+  }
+
+  ## Summary statistics ##
+  dat$epi$new.dx[at] <- nDx
+
+  return(dat)
+}
+
+
 # Prevalence Module -------------------------------------------------------
 
 prevalence_covid <- function(dat, at) {
@@ -513,7 +551,7 @@ prevalence_covid <- function(dat, at) {
                  "i.pass.num", "i.crew.num",
                  "se.flow", "ea.flow", "ar.flow",
                  "eip.flow", "ipic.flow", "icr.flow",
-                 "d.flow", "exit.flow",
+                 "d.flow", "exit.flow", "new.dx",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge", "meanClinic")
   if (at == 1) {
@@ -613,10 +651,10 @@ offload_covid <- function(dat, at) {
   exit.rate.pass <- dat$param$exit.rate.pass
   exit.rate.crew <- dat$param$exit.rate.crew
 
-  exit.elig <- dat$param$exit.elig
+  exit.elig.status <- dat$param$exit.elig.status
   require.dx <- dat$param$exit.require.dx
 
-  idsElig <- which(active == 1 & status %in% exit.elig)
+  idsElig <- which(active == 1 & status %in% exit.elig.status)
   if (require.dx == TRUE) {
     idsElig <- intersect(idsElig, which(dxStatus == 1))
   }
