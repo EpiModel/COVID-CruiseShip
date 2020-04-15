@@ -158,6 +158,8 @@ plot(dx2a, sim.lines = TRUE)
 # 3 times a day
 cp.edges <- 3*n.rooms
 
+formation3 <- ~edges + nodematch("sector") + nodematch("type")
+target.stats3 <- c(cp.edges, cp.edges, 0)
 
 coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
