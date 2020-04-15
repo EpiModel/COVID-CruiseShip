@@ -513,7 +513,7 @@ prevalence_covid <- function(dat, at) {
                  "i.pass.num", "i.crew.num",
                  "se.flow", "ea.flow", "ar.flow",
                  "eip.flow", "ipic.flow", "icr.flow",
-                 "d.flow",
+                 "d.flow", "exit.flow",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge", "meanClinic")
   if (at == 1) {
@@ -593,6 +593,54 @@ deaths_covid <- function(dat, at) {
 
   ## Summary statistics ##
   dat$epi$d.flow[at] <- nDeaths
+
+  return(dat)
+}
+
+
+# Offloading Passengers ---------------------------------------------------
+
+offload_covid <- function(dat, at) {
+
+  ## Attributes ##
+  active <- dat$attr$active
+  age <- dat$attr$age
+  status <- dat$attr$status
+  dxStatus <- dat$attr$dxStatus
+  type <- dat$attr$type
+
+  ## Parameters ##
+  exit.rate.pass <- dat$param$exit.rate.pass
+  exit.rate.crew <- dat$param$exit.rate.crew
+
+  exit.elig <- dat$param$exit.elig
+  require.dx <- dat$param$exit.require.dx
+
+  idsElig <- which(active == 1 & status %in% exit.elig)
+  if (require.dx == TRUE) {
+    idsElig <- intersect(idsElig, which(dxStatus == 1))
+  }
+  nElig <- length(idsElig)
+  nExits <- 0
+
+  if (nElig > 0) {
+    exit.rates <- ifelse(type[idsElig] == "p", exit.rate.pass, exit.rate.crew)
+    vecExits <- which(rbinom(nElig, 1, exit.rates) == 1)
+    idsExits <- idsElig[vecExits]
+    nExits <- length(idsExits)
+
+    if (nExits > 0) {
+      active[idsExits] <- 0
+      inactive <- which(active == 0)
+      dat$attr <- deleteAttr(dat$attr, inactive)
+      for (i in 1:length(dat$el)) {
+        dat$el[[i]] <- delete_vertices(dat$el[[i]], inactive)
+      }
+    }
+  }
+
+  ## Summary statistics ##
+  dat$epi$exit.flow[at] <- nExits
 
   return(dat)
 }
