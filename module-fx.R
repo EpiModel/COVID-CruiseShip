@@ -194,8 +194,12 @@ infect_covid <- function(dat, at) {
   nElig <- length(idsInf)
 
   ## Common Parameters ##
-  inf.prob.sympt.rr <- dat$param$inf.prob.sympt.rr
   inf.prob.a.rr <- dat$param$inf.prob.a.rr
+
+  act.rate.dx.inter.rr <- dat$param$act.rate.dx.inter.rr
+  act.rate.dx.inter.time <- dat$param$act.rate.dx.inter.time
+  act.rate.sympt.inter.rr <- dat$param$act.rate.sympt.inter.rr
+  act.rate.sympt.inter.time <- dat$param$act.rate.sympt.inter.time
 
   ## Initialize default incidences at 0 ##
   nInf.PtoP <- 0
@@ -230,6 +234,14 @@ infect_covid <- function(dat, at) {
       del.PP$actRate <- act.rate
       if (at >= act.rate.pp.inter.time) {
         del.PP$actRate <- del.PP$actRate * act.rate.pp.inter.rr
+      }
+      if (at >= act.rate.dx.inter.time) {
+        del.PP$actRate[del.PP$dx == 1] <- del.PP$actRate[del.PP$dx == 1] *
+                                          act.rate.dx.inter.rr
+      }
+      if (at >= act.rate.sympt.inter.time) {
+        del.PP$actRate[del.PP$stat == "ic"] <- del.PP$actRate[del.PP$stat == "ic"] *
+                                               act.rate.sympt.inter.rr
       }
       del.PP$finalProb <- 1 - (1 - del.PP$transProb)^del.PP$actRate
 
@@ -276,6 +288,14 @@ infect_covid <- function(dat, at) {
       if (at >= act.rate.cc.inter.time) {
         del.CC$actRate <- del.CC$actRate * act.rate.cc.inter.rr
       }
+      if (at >= act.rate.dx.inter.time) {
+        del.CC$actRate[del.CC$dx == 1] <- del.CC$actRate[del.CC$dx == 1] *
+                                          act.rate.dx.inter.rr
+      }
+      if (at >= act.rate.sympt.inter.time) {
+        del.CC$actRate[del.CC$stat == "ic"] <- del.CC$actRate[del.CC$stat == "ic"] *
+                                               act.rate.sympt.inter.rr
+      }
       del.CC$finalProb <- 1 - (1 - del.CC$transProb)^del.CC$actRate
 
       # Stochastic transmission process
@@ -320,6 +340,14 @@ infect_covid <- function(dat, at) {
       del.PC$actRate <- act.rate
       if (at >= act.rate.pc.inter.time) {
         del.PC$actRate <- del.PC$actRate * act.rate.pc.inter.rr
+      }
+      if (at >= act.rate.dx.inter.time) {
+        del.PC$actRate[del.PP$dx == 1] <- del.PC$actRate[del.PC$dx == 1] *
+                                          act.rate.dx.inter.rr
+      }
+      if (at >= act.rate.sympt.inter.time) {
+        del.PC$actRate[del.PC$stat == "ic"] <- del.PC$actRate[del.PC$stat == "ic"] *
+                                               act.rate.sympt.inter.rr
       }
       del.PC$finalProb <- 1 - (1 - del.PC$transProb)^del.PC$actRate
 
@@ -369,7 +397,9 @@ infect_covid <- function(dat, at) {
 discord_edgelist_covid <- function(dat, nw = 1) {
 
   status <- dat$attr$status
+  dxStatus <- dat$attr$dxStatus
   type <- dat$attr$type
+
   el <- dat$el[[nw]]
 
   del <- NULL
@@ -384,7 +414,7 @@ discord_edgelist_covid <- function(dat, nw = 1) {
     if (nrow(pairs) > 0) {
       sus <- pairs[, 1]
       inf <- pairs[, 2]
-      del <- data.frame(sus = sus, inf = inf, stat = status[inf])
+      del <- data.frame(sus = sus, inf = inf, stat = status[inf], dx = dxStatus[inf])
     }
   }
 
@@ -537,6 +567,9 @@ dx_covid <- function(dat, at) {
       dxStatus[idsDx] <- 1
     }
   }
+
+  ## Replace attr
+  dat$attr$dxStatus <- dxStatus
 
   ## Summary statistics ##
   dat$epi$new.dx[at] <- nDx
