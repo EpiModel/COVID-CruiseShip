@@ -6,14 +6,13 @@
 ## Date: February 2020
 ##
 
-## Load EpiModel
-remotes::install_github("statnet/EpiModel")
-remotes::install_github("statnet/tergmLite")
+## Code works with these versions of EpiModel/tergmLite
+remotes::install_github("statnet/EpiModel@v1.8.0")
+remotes::install_github("statnet/tergmLite@v2.1.7")
 
 library("EpiModel")
 library("tergmLite")
 
-# Code works with this version of EpiModel/tergmLite
 sessionInfo()
 packageVersion("EpiModel") == "1.8.0"
 packageVersion("tergmLite") == "2.1.7"
@@ -239,59 +238,60 @@ saveRDS(est.pre, file = "est/est.covid-pre.rds")
 # Read in fitted network models
 est.pre <- readRDS("est/est.covid-pre.rds")
 est.post <- readRDS("est/est.covid-post.rds")
+est <- c(est.pre, est.post)
 
 # Model parameters
 source("params.R")
-param <- param.net(inf.prob.pp = 0.3,
+param <- param.net(inf.prob.pp = 0.05,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = Inf,
-                   act.rate.pp = 10,
+                   act.rate.pp = 5,
                    act.rate.pp.inter.rr = 1,
                    act.rate.pp.inter.time = Inf,
-                   inf.prob.pc = 0.3,
+                   inf.prob.pc = 0.05,
                    inf.prob.pc.inter.rr = 1,
                    inf.prob.pc.inter.time = Inf,
-                   act.rate.pc = 1,
+                   act.rate.pc = 5,
                    act.rate.pc.inter.rr = 1,
                    act.rate.pc.inter.time = Inf,
-                   inf.prob.cc = 0.3,
+                   inf.prob.cc = 0.05,
                    inf.prob.cc.inter.rr = 1,
                    inf.prob.cc.inter.time = Inf,
-                   act.rate.cc = 2,
+                   act.rate.cc = 5,
                    act.rate.cc.inter.rr = 1,
                    act.rate.cc.inter.time = Inf,
                    inf.prob.a.rr = 0.5,
                    prop.clinical = 0.75,
-                   act.rate.dx.inter.rr = 0.1,
+                   act.rate.dx.inter.rr = 1,
                    act.rate.dx.inter.time = Inf,
-                   act.rate.sympt.inter.rr = 0.5,
+                   act.rate.sympt.inter.rr = 1,
                    act.rate.sympt.inter.time = Inf,
-                   network.lockdown.time = 15,
+                   network.lockdown.time = Inf,
                    ea.rate = 1/3,
                    ar.rate = 1/3,
                    eip.rate = 1/3,
                    ipic.rate = 1/5,
                    icr.rate = 1/2,
-                   dx.start = 10,
+                   dx.start = Inf,
                    dx.rate.pass = 0.1,
                    dx.rate.crew = 0.1,
                    dx.elig.status = c("s", "e", "a", "ip", "ic"),
                    mort.rates = mr_vec,
-                   mort.dis.mult = 1000,
+                   mort.dis.mult = 100,
                    exit.rate.pass = 0,
                    exit.rate.crew = 0,
                    exit.elig.status = c("ip", "ic"),
                    exit.require.dx = FALSE)
 
 # Initial conditions
-init <- init.net(e.num.pass = 10,
-                 e.num.crew = 10)
+init <- init.net(e.num.pass = 2,
+                 e.num.crew = 0)
 
 # Control settings
 source("module-fx.R", echo = FALSE)
-control <- control.net(nsteps = 60,
-                       nsims = 1,
-                       ncores = 1,
+control <- control.net(nsteps = 50,
+                       nsims = 8,
+                       ncores = 4,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = deaths_covid,
@@ -311,11 +311,13 @@ control <- control.net(nsteps = 60,
                        skip.check = TRUE)
 
 sim <- netsim(est, param, init, control)
-print(sim)
+# print(sim)
 
+sim <- mutate_epi(sim, se.cuml = cumsum(se.flow))
 df <- as.data.frame(sim, out = "mean")
 round(df, 2)
 
+# Evaluate IFR
 # 8.2 deaths expected
 sum(df$d.flow)
 sum(df$se.flow)
@@ -346,11 +348,6 @@ plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
 
-plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
 plot(sim, y = c("se.flow", "eip.flow", "ipic.flow", "icr.flow"),
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
@@ -364,3 +361,15 @@ plot(sim, y = "d.flow",
      mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
      qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
      legend = TRUE)
+
+plot(sim, y = "Rt", mean.smooth = FALSE)
+plot(sim, y = "se.cuml")
+abline(h = n.pass + n.crew)
+
+df$se.flow
+cumsum(df$se.flow)
+
+sum(df$se.flow)
+
+# no lockdown: 3613.4
+
