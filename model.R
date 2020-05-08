@@ -8,11 +8,15 @@
 
 ## Load EpiModel
 remotes::install_github("statnet/EpiModel")
+remotes::install_github("statnet/tergmLite")
+
 library("EpiModel")
 library("tergmLite")
 
-# Code works with this version of EpiModel
+# Code works with this version of EpiModel/tergmLite
+sessionInfo()
 packageVersion("EpiModel") == "1.8.0"
+packageVersion("tergmLite") == "2.1.7"
 
 
 # Network model estimation ------------------------------------------------
@@ -55,6 +59,8 @@ sector[crew.ids] <- room.sectors.c
 sector[crew.ids]
 sector
 
+table(sector, type.attr)
+
 # median age for crew was 36 (IQR:29-43) and
 # the median age of the passengers was 69 (IQR: 62-73)
 ages.pass <- round(rnorm(n.pass, 69, 6), 1)
@@ -89,10 +95,7 @@ md <- 1
 edges <- n.pass * md/2
 absdiff <- edges * 5
 
-pre.isolation.scale <- c(2, 1)
-
 target.stats <- c(edges, edges)
-target.stats.pre <- target.stats * pre.isolation.scale
 
 # Parameterize the dissolution model
 coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
@@ -109,11 +112,12 @@ dx1a <- netdx(est1, nsims = 1e4, dynamic = FALSE,
               nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
               set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1a)
-plot(dx1a, sim.lines = TRUE)
 
-# Pre-isolation model
+# Pre-isolation model: twice the contacts, retain same within-cabin rate
+pre.isolation.scale <- c(2, 1)
+target.stats.pre <- target.stats * pre.isolation.scale
 est1.pre <- netest(nw, formation, target.stats.pre, coef.diss, coef.form = -Inf,
-               set.control.ergm = control.ergm(MCMLE.maxit = 500))
+                   set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est1.pre)
 mcmc.diagnostics(est1.pre$fit)
 
@@ -125,7 +129,7 @@ print(dx1a.pre)
 
 ## Model 2: crew/crew contacts each day
 
-# about 2 ongoing contacts a day, but max at 3
+# 2 contacts a day, but max at 3, with strong sectorization
 formation2 <- ~edges +
                nodematch("sector") +
                offset(degrange(from = 4)) +
@@ -133,7 +137,9 @@ formation2 <- ~edges +
 
 md <- 2
 edges <- n.crew * md/2
-target.stats2 <- c(edges, edges)
+
+# assume 95% of contacts are within sector
+target.stats2 <- c(edges, edges*0.95)
 
 # Dissolution model
 coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
@@ -146,10 +152,26 @@ summary(est2)
 mcmc.diagnostics(est2$fit)
 
 dx2a <- netdx(est2, nsims = 1e4, dynamic = FALSE,
-             nwstats.formula = ~edges + nodefactor("type", levels = NULL) + absdiff("age"),
+             nwstats.formula = ~edges + nodefactor("type", levels = NULL),
              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx2a)
-plot(dx2a, sim.lines = TRUE)
+
+# pre-isolation model: double contacts, relax sectorization, and remove degree constraint
+formation2.pre <- ~edges +
+                   nodematch("sector") +
+                   offset(nodefactor("type", levels = -1))
+pre.isolation.scale2 <- c(2, 0.5)
+target.stats2.pre <- target.stats2 * pre.isolation.scale2
+
+est2.pre <- netest(nw, formation2.pre, target.stats2.pre, coef.diss2, coef.form = -Inf,
+               set.control.ergm = control.ergm(MCMLE.maxit = 500))
+summary(est2.pre)
+mcmc.diagnostics(est2.pre$fit)
+
+dx2a.pre <- netdx(est2.pre, nsims = 1e4, dynamic = FALSE,
+              nwstats.formula = ~edges + nodefactor("type", levels = NULL),
+              set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+print(dx2a.pre)
 
 
 ## Model 3: crew/pass contacts each day
@@ -159,7 +181,7 @@ plot(dx2a, sim.lines = TRUE)
 cp.edges <- 3*n.rooms
 
 formation3 <- ~edges + nodematch("sector") + nodematch("type")
-target.stats3 <- c(cp.edges, cp.edges, 0)
+target.stats3 <- c(cp.edges, cp.edges*0.98, 0)
 
 coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
@@ -172,26 +194,43 @@ dx3a <- netdx(est3, nsims = 1e4, dynamic = FALSE,
               nwstats.formula = ~edges + nodemix("type", levels = NULL))
 print(dx3a)
 
+## additional diagnostics
 # sim1 <- simulate(est3$fit)
 # sim1
 # el1 <- as.edgelist(sim1)
 # head(el1, 25)
-# matrix(type[el1], ncol = 2)
+# matrix(type.attr[el1], ncol = 2)
 # summary(sim1 ~ degree(0, by = "type"))
-# # table(tabulate(pass.room[el1[, 1]], n.rooms))
+# table(tabulate(pass.room[el1[, 1]], n.rooms))
 # summary(get_degree(el1)[pass.ids])
 # summary(get_degree(el1)[crew.ids])
 # n.rooms/n.crew
 
+# pre-isolation model: double contacts and remove sectorization
+formation3.pre <- ~edges + nodematch("type")
+target.stats3.pre <- c(cp.edges, 0)
+
+est3.pre <- netest(nw, formation3.pre, target.stats3.pre, coef.diss3,
+               set.control.ergm = control.ergm(MCMLE.maxit = 500))
+summary(est3.pre)
+mcmc.diagnostics(est3.pre$fit)
+
+dx3a.pre <- netdx(est3.pre, nsims = 1e4, dynamic = FALSE,
+                  nwstats.formula = ~edges + nodemix("type", levels = NULL) +
+                    nodematch("sector"))
+print(dx3a.pre)
+
+
 ## save out the data
 
 # post isolation
-est <- list(est1, est2, est3)
-saveRDS(est, file = "est/est.covid.rds")
+est.post <- list(est1, est2, est3)
+est.post
+saveRDS(est.post, file = "est/est.covid-post.rds")
 
 # pre isolation
-# est <- list(est1.pre, est2, est3)
-# saveRDS(est, file = "est/est.pre.covid.rds")
+est.pre <- list(est1.pre, est2.pre, est3.pre)
+saveRDS(est, file = "est/est.covid-pre.rds")
 
 
 
