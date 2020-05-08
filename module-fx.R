@@ -116,12 +116,18 @@ resim_nets_covid <- function(dat, at) {
   ## Edges correction
   dat <- edges_correct_covid(dat, at)
 
+  if (at < dat$param$network.lockdown.time) {
+    nets <- 1:3
+  } else {
+    nets <- 4:6
+  }
+
   # Network Resimulation
-  for (i in 1:length(dat$el)) {
+  for (i in nets) {
     nwparam <- EpiModel::get_nwparam(dat, network = i)
     isTERGM <- ifelse(nwparam$coef.diss$duration > 1, TRUE, FALSE)
     dat <- tergmLite::updateModelTermInputs(dat, network = i)
-    if (isTERGM) {
+    if (isTERGM == TRUE) {
       dat$el[[i]] <- tergmLite::simulate_network(p = dat$p[[i]],
                                                  el = dat$el[[i]],
                                                  coef.form = nwparam$coef.form,
@@ -201,6 +207,13 @@ infect_covid <- function(dat, at) {
   act.rate.sympt.inter.rr <- dat$param$act.rate.sympt.inter.rr
   act.rate.sympt.inter.time <- dat$param$act.rate.sympt.inter.time
 
+  network.lockdown.time <- dat$param$network.lockdown.time
+  if (at < network.lockdown.time) {
+    nets <- 1:3
+  } else {
+    nets <- 4:6
+  }
+
   ## Initialize default incidences at 0 ##
   nInf.PtoP <- 0
   nInf.PtoC <- 0
@@ -211,7 +224,7 @@ infect_covid <- function(dat, at) {
   if (length(idsInf) > 0) {
 
     ## Look up discordant edgelist ##
-    del.PP <- discord_edgelist_covid(dat, nw = 1)
+    del.PP <- discord_edgelist_covid(dat, nw = nets[1])
 
     ## If any discordant pairs, proceed ##
     if (!(is.null(del.PP))) {
@@ -266,7 +279,7 @@ infect_covid <- function(dat, at) {
     }
 
     # Crew/Crew Contacts
-    del.CC <- discord_edgelist_covid(dat, nw = 2)
+    del.CC <- discord_edgelist_covid(dat, nw = nets[2])
     if (!(is.null(del.CC))) {
 
       ## Parameters ##
@@ -319,7 +332,7 @@ infect_covid <- function(dat, at) {
     }
 
     # Pass/Crew Contacts
-    del.PC <- discord_edgelist_covid(dat, nw = 3)
+    del.PC <- discord_edgelist_covid(dat, nw = nets[3])
     if (!(is.null(del.PC))) {
 
       ## Parameters ##

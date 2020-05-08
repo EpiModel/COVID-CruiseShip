@@ -230,41 +230,43 @@ saveRDS(est.post, file = "est/est.covid-post.rds")
 
 # pre isolation
 est.pre <- list(est1.pre, est2.pre, est3.pre)
-saveRDS(est, file = "est/est.covid-pre.rds")
+saveRDS(est.pre, file = "est/est.covid-pre.rds")
 
 
 
 # Epidemic model simulation -----------------------------------------------
 
 # Read in fitted network models
-est <- readRDS("est/est.covid.rds")
+est.pre <- readRDS("est/est.covid-pre.rds")
+est.post <- readRDS("est/est.covid-post.rds")
 
 # Model parameters
 source("params.R")
 param <- param.net(inf.prob.pp = 0.3,
                    inf.prob.pp.inter.rr = 1,
-                   inf.prob.pp.inter.time = 15,
+                   inf.prob.pp.inter.time = Inf,
                    act.rate.pp = 10,
                    act.rate.pp.inter.rr = 1,
-                   act.rate.pp.inter.time = 15,
+                   act.rate.pp.inter.time = Inf,
                    inf.prob.pc = 0.3,
                    inf.prob.pc.inter.rr = 1,
-                   inf.prob.pc.inter.time = 15,
+                   inf.prob.pc.inter.time = Inf,
                    act.rate.pc = 1,
                    act.rate.pc.inter.rr = 1,
-                   act.rate.pc.inter.time = 15,
+                   act.rate.pc.inter.time = Inf,
                    inf.prob.cc = 0.3,
                    inf.prob.cc.inter.rr = 1,
-                   inf.prob.cc.inter.time = 15,
+                   inf.prob.cc.inter.time = Inf,
                    act.rate.cc = 2,
                    act.rate.cc.inter.rr = 1,
-                   act.rate.cc.inter.time = 15,
+                   act.rate.cc.inter.time = Inf,
                    inf.prob.a.rr = 0.5,
                    prop.clinical = 0.75,
                    act.rate.dx.inter.rr = 0.1,
-                   act.rate.dx.inter.time = 15,
+                   act.rate.dx.inter.time = Inf,
                    act.rate.sympt.inter.rr = 0.5,
-                   act.rate.sympt.inter.time = 15,
+                   act.rate.sympt.inter.time = Inf,
+                   network.lockdown.time = 15,
                    ea.rate = 1/3,
                    ar.rate = 1/3,
                    eip.rate = 1/3,
