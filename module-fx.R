@@ -271,10 +271,10 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if (nInf.PtoP > 0) {
-        status[idsNewInf.PtoP] <- "e"
-        infTime[idsNewInf.PtoP] <- at
-        statusTime[idsNewInf.PtoP] <- at
-        transmissions[transIds] <- transmissions[transIds] + 1
+        dat$attr$status[idsNewInf.PtoP] <- "e"
+        dat$attr$infTime[idsNewInf.PtoP] <- at
+        dat$attr$statusTime[idsNewInf.PtoP] <- at
+        dat$attr$transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
 
@@ -324,10 +324,10 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if (nInf.CtoC > 0) {
-        status[idsNewInf.CtoC] <- "e"
-        infTime[idsNewInf.CtoC] <- at
-        statusTime[idsNewInf.CtoC] <- at
-        transmissions[transIds] <- transmissions[transIds] + 1
+        dat$attr$status[idsNewInf.CtoC] <- "e"
+        dat$attr$infTime[idsNewInf.CtoC] <- at
+        dat$attr$statusTime[idsNewInf.CtoC] <- at
+        dat$attr$transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
 
@@ -383,19 +383,14 @@ infect_covid <- function(dat, at) {
 
       # Set new attributes for those newly infected
       if ((nInf.CtoP + nInf.PtoC) > 0) {
-        status[idsNewInf.PC] <- "e"
-        infTime[idsNewInf.PC] <- at
-        statusTime[idsNewInf.PC] <- at
-        transmissions[transIds] <- transmissions[transIds] + 1
+        dat$attr$status[idsNewInf.PC] <- "e"
+        dat$attr$infTime[idsNewInf.PC] <- at
+        dat$attr$statusTime[idsNewInf.PC] <- at
+        dat$attr$transmissions[transIds] <- transmissions[transIds] + 1
       }
     }
   }
 
-  ## Write out attr
-  dat$attr$status <- status
-  dat$attr$infTime <- infTime
-  dat$attr$statusTime <- statusTime
-  dat$attr$transmissions <- transmissions
 
   ## Save summary statistics for S->E flow
   dat$epi$se.flow[at] <- nInf.PtoP + nInf.PtoC + nInf.CtoP + nInf.CtoC
