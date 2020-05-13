@@ -568,12 +568,16 @@ dx_covid <- function(dat, at) {
   idsElig <- which(active == 1 & dxStatus == 0 & status %in% dx.elig.status)
   nElig <- length(idsElig)
   nDx <- 0
+  nDx.pos <- 0
+  nDx.pos.sympt <- 0
 
   if (at >= dx.start & nElig > 0) {
     dx.rates <- ifelse(type[idsElig] == "p", dx.rate.pass, dx.rate.crew)
     vecDx <- which(rbinom(nElig, 1, dx.rates) == 1)
     idsDx <- idsElig[vecDx]
     nDx <- length(idsDx)
+    nDx.pos <- intersect(idsDx, which(status %in% c("e", "a", "ip", "ic")))
+    nDx.pos.sympt <- intersect(idsDx, which(status == "ic"))
     if (nDx > 0) {
       dxStatus[idsDx] <- 1
     }
@@ -583,7 +587,9 @@ dx_covid <- function(dat, at) {
   dat$attr$dxStatus <- dxStatus
 
   ## Summary statistics ##
-  dat$epi$new.dx[at] <- nDx
+  dat$epi$nDx[at] <- nDx
+  dat$epi$nDx.pos[at] <- nDx.pos
+  dat$epi$nDx.pos.sympt[at] <- nDx.pos.sympt
 
   return(dat)
 }
@@ -604,7 +610,7 @@ prevalence_covid <- function(dat, at) {
                  "i.pass.num", "i.crew.num",
                  "se.flow", "ea.flow", "ar.flow", "Rt",
                  "eip.flow", "ipic.flow", "icr.flow",
-                 "d.flow", "exit.flow", "new.dx",
+                 "d.flow", "exit.flow", "nDx", "nDx.pos", "nDx.pos.sympt",
                  "se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow",
                  "meanAge", "meanClinic")
   if (at == 1) {
