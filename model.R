@@ -36,7 +36,7 @@ table(room.ids.pass)
 
 type.attr <- rep(c("p", "c"), times = c(n.pass, n.crew))
 
-crew.ids <- which(nw %v% "type" == "c")
+crew.ids <- which(type.attr == "c")
 crew.ids
 room.ids
 
@@ -266,15 +266,15 @@ param <- param.net(inf.prob.pp = 0.05,
                    act.rate.dx.inter.time = Inf,
                    act.rate.sympt.inter.rr = 1,
                    act.rate.sympt.inter.time = Inf,
-                   network.lockdown.time = Inf,
-                   ea.rate = 1/3,
-                   ar.rate = 1/3,
-                   eip.rate = 1/3,
-                   ipic.rate = 1/5,
-                   icr.rate = 1/2,
-                   dx.start = Inf,
-                   dx.rate.pass = 0.1,
-                   dx.rate.crew = 0.1,
+                   network.lockdown.time = 16,
+                   ea.rate = 1/4.0,
+                   ar.rate = 1/5.0,
+                   eip.rate = 1/4.0,
+                   ipic.rate = 1/1.5,
+                   icr.rate = 1/3.5,
+                   dx.start = 15,
+                   dx.rate.pass = 0.052,
+                   dx.rate.crew = 0.052,
                    dx.elig.status = c("s", "e", "a", "ip", "ic"),
                    mort.rates = mr_vec,
                    mort.dis.mult = 100,
@@ -289,9 +289,9 @@ init <- init.net(e.num.pass = 2,
 
 # Control settings
 source("module-fx.R", echo = FALSE)
-control <- control.net(nsteps = 50,
-                       nsims = 8,
-                       ncores = 4,
+control <- control.net(nsteps = 31,
+                       nsims = 1,
+                       ncores = 1,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = deaths_covid,
@@ -317,13 +317,11 @@ sim <- mutate_epi(sim, se.cuml = cumsum(se.flow))
 df <- as.data.frame(sim, out = "mean")
 round(df, 2)
 
-# Evaluate IFR
-# 8.2 deaths expected
-sum(df$d.flow)
 sum(df$se.flow)
 
-(sum(df$d.flow)-8.2)/sum(df$se.flow)
-
+# Evaluate IFR
+sum(df$d.flow)
+sum(df$se.flow)
 sum(df$se.flow)
 summary(colSums(sim$epi$se.flow))
 
@@ -368,8 +366,3 @@ abline(h = n.pass + n.crew)
 
 df$se.flow
 cumsum(df$se.flow)
-
-sum(df$se.flow)
-
-# no lockdown: 3613.4
-
