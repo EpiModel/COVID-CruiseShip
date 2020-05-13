@@ -576,8 +576,8 @@ dx_covid <- function(dat, at) {
     vecDx <- which(rbinom(nElig, 1, dx.rates) == 1)
     idsDx <- idsElig[vecDx]
     nDx <- length(idsDx)
-    nDx.pos <- intersect(idsDx, which(status %in% c("e", "a", "ip", "ic")))
-    nDx.pos.sympt <- intersect(idsDx, which(status == "ic"))
+    nDx.pos <- length(intersect(idsDx, which(status %in% c("e", "a", "ip", "ic"))))
+    nDx.pos.sympt <- length(intersect(idsDx, which(status == "ic")))
     if (nDx > 0) {
       dxStatus[idsDx] <- 1
     }
