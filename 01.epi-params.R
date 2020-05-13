@@ -22,3 +22,18 @@ mr_pp_pd <- mortality_rate / 1e5 / 365
 # Build out a mortality rate vector
 age_spans <- c(1, 4, rep(5, 16), 1)
 mr_vec <- rep(mr_pp_pd, times = age_spans)
+
+
+# Epi Curve ---------------------------------------------------------------
+
+# cumulative positive tests per day
+
+# before test campaign
+pre <- rep(0, 15)
+post <- c(10, 20, 61, 64, 70,
+          135, 135, 174, 218, 218,
+          285, 355, 454, 542, 621, 634)
+pos.tests.day <- c(pre, post)
+
+# par(mar = c(3,3,1,1), mgp = c(2,1,0))
+# plot(pos.tests.day, type = "b", col = "firebrick", lwd = 1.5, pch = 20)

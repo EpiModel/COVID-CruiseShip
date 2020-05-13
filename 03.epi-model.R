@@ -25,7 +25,7 @@ est.post <- readRDS("est/est.covid-post.rds")
 est <- c(est.pre, est.post)
 
 # Model parameters
-source("params.R")
+source("01.epi-params.R")
 param <- param.net(inf.prob.pp = 0.05,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = Inf,
@@ -72,7 +72,7 @@ init <- init.net(e.num.pass = 2,
                  e.num.crew = 0)
 
 # Control settings
-source("module-fx.R", echo = FALSE)
+source("00.module-fx.R", echo = FALSE)
 control <- control.net(nsteps = 31,
                        nsims = 1,
                        ncores = 1,
