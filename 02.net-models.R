@@ -113,8 +113,8 @@ dx1a <- netdx(est1, nsims = 1e4, dynamic = FALSE,
               set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1a)
 
-# Pre-isolation model: twice the contacts, retain same within-cabin rate
-pre.isolation.scale <- c(2, 1)
+# Pre-isolation model: 5x the contacts, retain same within-cabin rate
+pre.isolation.scale <- c(5, 1)
 target.stats.pre <- target.stats * pre.isolation.scale
 est1.pre <- netest(nw, formation, target.stats.pre, coef.diss, coef.form = -Inf,
                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
@@ -131,9 +131,9 @@ print(dx1a.pre)
 
 # 2 contacts a day, but max at 3, with strong sectorization
 formation2 <- ~edges +
-  nodematch("sector") +
-  offset(degrange(from = 4)) +
-  offset(nodefactor("type", levels = -1))
+               nodematch("sector") +
+               offset(degrange(from = 4)) +
+               offset(nodefactor("type", levels = -1))
 
 md <- 2
 edges <- n.crew * md/2
@@ -156,10 +156,10 @@ dx2a <- netdx(est2, nsims = 1e4, dynamic = FALSE,
               set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx2a)
 
-# pre-isolation model: double contacts, relax sectorization, and remove degree constraint
+# pre-isolation model: 2x contacts, relax sectorization, and remove degree constraint
 formation2.pre <- ~edges +
-  nodematch("sector") +
-  offset(nodefactor("type", levels = -1))
+                   nodematch("sector") +
+                   offset(nodefactor("type", levels = -1))
 pre.isolation.scale2 <- c(2, 0.5)
 target.stats2.pre <- target.stats2 * pre.isolation.scale2
 
@@ -177,7 +177,7 @@ print(dx2a.pre)
 ## Model 3: crew/pass contacts each day
 
 # crew/pass contacts:
-# 3 times a day
+# 3 times a day per room
 cp.edges <- 3*n.rooms
 
 formation3 <- ~edges + nodematch("sector") + nodematch("type")
@@ -206,9 +206,9 @@ print(dx3a)
 # summary(get_degree(el1)[crew.ids])
 # n.rooms/n.crew
 
-# pre-isolation model: double contacts and remove sectorization
+# pre-isolation model: 3x contacts and remove sectorization
 formation3.pre <- ~edges + nodematch("type")
-target.stats3.pre <- c(cp.edges, 0)
+target.stats3.pre <- c(cp.edges*3, 0)
 
 est3.pre <- netest(nw, formation3.pre, target.stats3.pre, coef.diss3,
                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
@@ -217,7 +217,7 @@ mcmc.diagnostics(est3.pre$fit)
 
 dx3a.pre <- netdx(est3.pre, nsims = 1e4, dynamic = FALSE,
                   nwstats.formula = ~edges + nodemix("type", levels = NULL) +
-                    nodematch("sector"))
+                                     nodematch("sector"))
 print(dx3a.pre)
 
 
@@ -225,7 +225,6 @@ print(dx3a.pre)
 
 # post isolation
 est.post <- list(est1, est2, est3)
-est.post
 saveRDS(est.post, file = "est/est.covid-post.rds")
 
 # pre isolation
