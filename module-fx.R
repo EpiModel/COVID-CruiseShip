@@ -440,6 +440,7 @@ progress_covid <- function(dat, at) {
   statusTime <- dat$attr$statusTime
   infTime <- dat$attr$infTime
   clinical <- dat$attr$clinical
+  age <- dat$attr$age
 
   ## Parameters
   prop.clinical <- dat$param$prop.clinical
@@ -450,10 +451,12 @@ progress_covid <- function(dat, at) {
   icr.rate <- dat$param$icr.rate
 
   ## Determine Subclinical (E to A) or Clinical (E to Ip to Ic) pathway
-  # browser()
   ids.newInf <- which(active == 1 & status == "e" & statusTime <= at & is.na(clinical))
   num.newInf <- length(ids.newInf)
   if (num.newInf > 0) {
+    age.group <- pmin((round(age[ids.newInf], -1)/10) + 1, 8)
+    prop.clin.vec <- prop.clinical[age.group]
+    if (any(is.na(prop.clin.vec))) stop("error in prop.clin.vec")
     vec.new.clinical <- rbinom(num.newInf, 1, prop.clinical)
     clinical[ids.newInf] <- vec.new.clinical
   }
