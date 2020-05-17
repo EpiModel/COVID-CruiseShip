@@ -7,17 +7,7 @@
 ## Date: February 2020
 ##
 
-## Code works with these versions of EpiModel/tergmLite
-# remotes::install_github("statnet/EpiModel@v1.8.0")
-# remotes::install_github("statnet/tergmLite@v2.1.7")
-
-library("EpiModel")
-library("tergmLite")
-
-# sessionInfo()
-packageVersion("EpiModel") == "1.8.0"
-packageVersion("tergmLite") == "2.1.7"
-
+library("EpiModelCOVID")
 
 # Read in fitted network models
 est.pre <- readRDS("est/est.covid-pre.rds")
@@ -50,15 +40,15 @@ param <- param.net(inf.prob.pp = 0.05,
                    act.rate.dx.inter.time = Inf,
                    act.rate.sympt.inter.rr = 1,
                    act.rate.sympt.inter.time = Inf,
-                   network.lockdown.time = 16,
+                   network.lockdown.time = 15,
                    ea.rate = 1/4.0,
                    ar.rate = 1/5.0,
                    eip.rate = 1/4.0,
                    ipic.rate = 1/1.5,
                    icr.rate = 1/3.5,
-                   dx.start = 15,
-                   dx.rate.pass = 0.052,
-                   dx.rate.crew = 0.052,
+                   dx.start = 14,
+                   dx.rate.pass = 0.109,
+                   dx.rate.crew = 0.109,
                    dx.elig.status = c("s", "e", "a", "ip", "ic"),
                    mort.rates = mr_vec,
                    mort.dis.mult = 100,
@@ -68,14 +58,14 @@ param <- param.net(inf.prob.pp = 0.05,
                    exit.require.dx = FALSE)
 
 # Initial conditions
-init <- init.net(e.num.pass = 2,
+init <- init.net(e.num.pass = 8,
                  e.num.crew = 0)
 
 # Control settings
 source("00.module-fx.R", echo = FALSE)
 control <- control.net(nsteps = 31,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = 8,
+                       ncores = 4,
                        initialize.FUN = init_covid,
                        aging.FUN = aging_covid,
                        departures.FUN = deaths_covid,
@@ -97,11 +87,18 @@ control <- control.net(nsteps = 31,
 sim <- netsim(est, param, init, control)
 # print(sim)
 
-sim <- mutate_epi(sim, se.cuml = cumsum(se.flow))
+sim <- mutate_epi(sim, se.cuml = cumsum(se.flow),
+                       dx.cuml = cumsum(nDx),
+                       dx.pos.cuml = cumsum(nDx.pos))
 df <- as.data.frame(sim, out = "mean")
-round(df, 2)
+# round(df, 2)
 
-sum(df$se.flow)
+df$se.cuml
+df$dx.cuml
+max(df$dx.cuml/18)
+df$dx.pos.cuml
+plot(sim, y = c("se.cuml", "dx.pos.cuml"), qnts = 0.5, legend = TRUE)
+lines(pos.tests.day, lty = 2, lwd = 2)
 
 # Evaluate IFR
 sum(df$d.flow)

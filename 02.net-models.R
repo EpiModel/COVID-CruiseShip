@@ -7,12 +7,7 @@
 ## Date: February 2020
 ##
 
-## Code works with these versions of EpiModel/tergmLite
-# remotes::install_github("statnet/EpiModel@v1.8.0")
-# remotes::install_github("statnet/tergmLite@v2.1.7")
-
-library("EpiModel")
-library("tergmLite")
+library("EpiModelCOVID")
 
 # sessionInfo()
 packageVersion("EpiModel") == "1.8.0"
