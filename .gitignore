@@ -45,3 +45,4 @@ vignettes/*.pdf
 *.webloc
 background/*
 Notes/*
+analysis/data/*

@@ -9,12 +9,8 @@
 
 library("EpiModelCOVID")
 
-# sessionInfo()
-packageVersion("EpiModel") == "1.8.0"
-packageVersion("tergmLite") == "2.1.7"
 
-
-# Network model estimation ------------------------------------------------
+# Model Parameters --------------------------------------------------------
 
 n.crew <- 1045
 n.pass <- 2666
@@ -77,7 +73,11 @@ nw <- set.vertex.attribute(nw, "pass.room", room.ids.pass, pass.ids)
 nw <- set.vertex.attribute(nw, "age", age)
 nw <- set.vertex.attribute(nw, "sector", sector)
 
-# Model 1: pass/pass contacts within rooms each day
+
+
+# Model 1. Pass/Pass Contacts ---------------------------------------------
+
+## 1a: Base post-lockdown model
 
 # Define the formation model
 formation <- ~edges +
@@ -108,7 +108,7 @@ dx1a <- netdx(est1, nsims = 1e4, dynamic = FALSE,
               set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
 print(dx1a)
 
-# Pre-isolation model: 5x the contacts, retain same within-cabin rate
+## 1b. Pre-isolation model: 5x the contacts, retain same within-cabin rate
 pre.isolation.scale <- c(5, 1)
 target.stats.pre <- target.stats * pre.isolation.scale
 est1.pre <- netest(nw, formation, target.stats.pre, coef.diss, coef.form = -Inf,
@@ -122,7 +122,8 @@ dx1a.pre <- netdx(est1.pre, nsims = 1e4, dynamic = FALSE,
 print(dx1a.pre)
 
 
-## Model 2: crew/crew contacts each day
+
+# Model 2: Crew/Crew Contacts ---------------------------------------------
 
 # 2 contacts a day, but max at 3, with strong sectorization
 formation2 <- ~edges +
@@ -169,7 +170,8 @@ dx2a.pre <- netdx(est2.pre, nsims = 1e4, dynamic = FALSE,
 print(dx2a.pre)
 
 
-## Model 3: crew/pass contacts each day
+
+# Model 3: Crew/Pass Contacts ---------------------------------------------
 
 # crew/pass contacts:
 # 3 times a day per room

@@ -7,12 +7,16 @@
 ## Date: February 2020
 ##
 
-library("EpiModelCOVID")
+suppressPackageStartupMessages(library("EpiModelCOVID"))
+library("EpiModelHPC")
 
 # Read in fitted network models
 est.pre <- readRDS("est/est.covid-pre.rds")
 est.post <- readRDS("est/est.covid-post.rds")
 est <- c(est.pre, est.post)
+
+pull_env_vars(num.vars = c("NLT", "PPE",
+                           "ARPP", "ARPC", "ARCC"))
 
 # Model parameters
 source("01.epi-params.R")
@@ -20,27 +24,27 @@ param <- param.net(inf.prob.pp = 0.1,
                    inf.prob.pp.inter.rr = 1,
                    inf.prob.pp.inter.time = Inf,
                    act.rate.pp = 5,
-                   act.rate.pp.inter.rr = 1,
-                   act.rate.pp.inter.time = Inf,
+                   act.rate.pp.inter.rr = ARPP, # 1,
+                   act.rate.pp.inter.time = 15,
                    inf.prob.pc = 0.1,
                    inf.prob.pc.inter.rr = 0.6,
-                   inf.prob.pc.inter.time = 15,
+                   inf.prob.pc.inter.time = PPE, #15,
                    act.rate.pc = 1,
-                   act.rate.pc.inter.rr = 1,
-                   act.rate.pc.inter.time = Inf,
+                   act.rate.pc.inter.rr = ARPC, # 1,
+                   act.rate.pc.inter.time = 15,
                    inf.prob.cc = 0.1,
                    inf.prob.cc.inter.rr = 0.6,
-                   inf.prob.cc.inter.time = 15,
+                   inf.prob.cc.inter.time = PPE, #15,
                    act.rate.cc = 1,
-                   act.rate.cc.inter.rr = 1,
-                   act.rate.cc.inter.time = Inf,
+                   act.rate.cc.inter.rr = ARCC, # 1,
+                   act.rate.cc.inter.time = 15,
                    inf.prob.a.rr = 0.5,
                    prop.clinical = c(0.40, 0.25, 0.37, 0.42, 0.51, 0.59, 0.72, 0.76),
                    act.rate.dx.inter.rr = 0.95,
                    act.rate.dx.inter.time = 15,
                    act.rate.sympt.inter.rr = 1,
                    act.rate.sympt.inter.time = Inf,
-                   network.lockdown.time = 1,
+                   network.lockdown.time = NLT, #### 15,
                    ea.rate = 1/4.0,
                    ar.rate = 1/5.0,
                    eip.rate = 1/4.0,
@@ -61,10 +65,10 @@ init <- init.net(e.num.pass = 8,
                  e.num.crew = 0)
 
 # Control settings
-# devtools::load_all("~/Dropbox/Dev/EpiModelCOVID")
-control <- control.net(nsteps = 31,
-                       nsims = 1,
-                       ncores = 1,
+control <- control.net(simno = fsimno,
+                       nsteps = 31,
+                       nsims = nsims,
+                       ncores = ncores,
                        initialize.FUN = init_covid_ship,
                        aging.FUN = aging_covid_ship,
                        departures.FUN = deaths_covid_ship,
@@ -88,73 +92,5 @@ control <- control.net(nsteps = 31,
                        skip.check = TRUE)
 
 sim <- netsim(est, param, init, control)
-# print(sim)
 
-sim <- mutate_epi(sim, se.cuml = cumsum(se.flow),
-                       dx.cuml = cumsum(nDx),
-                       dx.pos.cuml = cumsum(nDx.pos),
-                       totI = e.num + a.num + ip.num + ic.num)
-df <- as.data.frame(sim, out = "mean")
-# round(df, 2)
-
-df$se.cuml
-df$dx.cuml
-max(df$dx.cuml/18)
-df$dx.pos.cuml
-pdf("analysis/Fig-Calibration1.pdf", height = 6, width = 10)
-par(mar = c(3,3,2,1), mgp = c(2,1,0))
-plot(sim, y = c("se.cuml", "dx.pos.cuml"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,
-     main = "Model Calibration", xlab = "Day", ylab = "Cumulative Count")
-pal <- RColorBrewer::brewer.pal(3, "Set1")
-legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical Diagnoses"),
-       lty = c(1,1,2), lwd = 2, col = c(pal[1:2], 1), bty = "n")
-lines(pos.tests.day, lty = 2, lwd = 2)
-dev.off()
-# df$totI
-
-# Evaluate IFR
-sum(df$d.flow)
-sum(df$se.flow)
-summary(colSums(sim$epi$se.flow))
-
-# Plot outcomes
-par(mar = c(3,3,1,1), mgp = c(2,1,0))
-pal <- RColorBrewer::brewer.pal(9, "Set1")
-pal <- rainbow(9)
-pal <- 1:9
-
-plot(sim,
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
-plot(sim, y = c("i.pass.num", "i.crew.num"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
-plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
-plot(sim, y = c("se.flow", "eip.flow", "ipic.flow", "icr.flow"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
-plot(sim, y = c("se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow"),
-     mean.col = pal, mean.lwd = 2, mean.smooth = FALSE, qnts = FALSE,
-     legend = TRUE)
-
-plot(sim, y = "d.flow",
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
-
-plot(sim, y = "Rt", mean.smooth = FALSE)
-plot(sim, y = "se.cuml")
-abline(h = n.pass + n.crew)
-
-df$se.flow
-cumsum(df$se.flow)
+savesim(sim, save.min = TRUE, save.max = FALSE, compress = TRUE)
