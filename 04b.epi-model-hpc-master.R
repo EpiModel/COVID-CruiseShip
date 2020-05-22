@@ -1,6 +1,7 @@
 
 library("EpiModelHPC")
 
+nsims <- 1000
 
 # Table 2 -----------------------------------------------------------------
 
@@ -19,7 +20,7 @@ sbatch_master(vars = vars,
               simno.start = 2000,
               append = FALSE,
               ckpt = TRUE,
-              nsims = 250,
+              nsims = nsims,
               ncores = 28,
               narray = 1,
               walltime = "00:10:00",
@@ -41,7 +42,7 @@ sbatch_master(vars = vars,
               build.runsim = TRUE,
               append = TRUE,
               ckpt = TRUE,
-              nsims = 250,
+              nsims = nsims,
               ncores = 28,
               narray = 1,
               walltime = "00:10:00",
@@ -64,7 +65,7 @@ sbatch_master(vars = vars,
               build.runsim = TRUE,
               append = TRUE,
               ckpt = TRUE,
-              nsims = 250,
+              nsims = nsims,
               ncores = 28,
               narray = 1,
               walltime = "00:10:00",

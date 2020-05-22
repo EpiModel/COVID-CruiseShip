@@ -67,7 +67,7 @@ calc_quants_ia <- function(x.base, x.comp, var, qnt.low = 0.025, qnt.high = 0.97
   nia <- sprintf("%.1f", nia)
   nia <- paste0(nia[1], " (", nia[2], ", ", nia[3], ")")
 
-  pia <- quantile(vec.pia, c(0.5, qnt.low, qnt.high), names = FALSE)*100
+  pia <- quantile(vec.pia, c(0.5, qnt.low, qnt.high), names = FALSE, na.rm = TRUE)*100
   pia <- sprintf("%.1f", pia)
   pia <- paste0(pia[1], " (", pia[2], ", ", pia[3], ")")
 

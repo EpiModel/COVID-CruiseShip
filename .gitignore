@@ -46,3 +46,6 @@ vignettes/*.pdf
 background/*
 Notes/*
 analysis/data/*
+
+analysis/*.pdf
+analysis/*.csv
