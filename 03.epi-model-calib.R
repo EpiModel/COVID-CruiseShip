@@ -10,8 +10,8 @@
 library("EpiModelCOVID")
 
 # Read in fitted network models
-est.pre <- readRDS("est/est.covid-pre.rds")
-est.post <- readRDS("est/est.covid-post.rds")
+est.pre <- readRDS("est/est.pre.rds")
+est.post <- readRDS("est/est.post.base.rds")
 est <- c(est.pre, est.post)
 
 # Model parameters
@@ -36,11 +36,11 @@ param <- param.net(inf.prob.pp = 0.1,
                    act.rate.cc.inter.time = Inf,
                    inf.prob.a.rr = 0.5,
                    prop.clinical = c(0.40, 0.25, 0.37, 0.42, 0.51, 0.59, 0.72, 0.76),
-                   act.rate.dx.inter.rr = 0.95,
+                   act.rate.dx.inter.rr = 0.1,
                    act.rate.dx.inter.time = 15,
-                   act.rate.sympt.inter.rr = 1,
-                   act.rate.sympt.inter.time = Inf,
-                   network.lockdown.time = 1,
+                   act.rate.sympt.inter.rr = 0.1,
+                   act.rate.sympt.inter.time = 15,
+                   network.lockdown.time = 15,
                    ea.rate = 1/4.0,
                    ar.rate = 1/5.0,
                    eip.rate = 1/4.0,
@@ -63,8 +63,8 @@ init <- init.net(e.num.pass = 8,
 # Control settings
 # devtools::load_all("~/Dropbox/Dev/EpiModelCOVID")
 control <- control.net(nsteps = 31,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = 8,
+                       ncores = 2,
                        initialize.FUN = init_covid_ship,
                        aging.FUN = aging_covid_ship,
                        departures.FUN = deaths_covid_ship,

@@ -17,7 +17,7 @@ prop.within.sector.post <- 0.98
 n.sectors.pass <- NULL  # If NULL, only within-cabin pass/pass mixing
 
 
-# Model Parameters --------------------------------------------------------
+# Network Setup -----------------------------------------------------------
 
 n.crew <- 1045
 n.pass <- 2666
@@ -81,13 +81,12 @@ nw <- set.vertex.attribute(nw, "age", age)
 nw <- set.vertex.attribute(nw, "sector", sector)
 
 
-
 # Model 1. Pass/Pass Contacts ---------------------------------------------
 
 ## 1a. Pre-Lockdown Model
 md.pre <- 5
 edges.pre <- n.pass * md.pre/2
-target.stats1.pre <- c(edges.pre, edges.pre*0.2)
+target.stats1.pre <- c(edges.pre, edges.pre/md.pre)
 
 formation1.pre <- ~edges +
                    nodematch("pass.room") +
@@ -132,7 +131,7 @@ if (is.null(n.sectors.pass)) {
 
   md.post <- md.pre
   edges.post <- n.pass * md.post/2
-  target.stats1.post <- c(edges.post, edges.post, edges.post*0.2)
+  target.stats1.post <- c(edges.post, edges.post, edges.post/md.post)
 
   formation1.post <- ~edges +
                       nodematch("sector") +

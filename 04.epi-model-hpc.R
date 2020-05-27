@@ -11,8 +11,8 @@ suppressPackageStartupMessages(library("EpiModelCOVID"))
 library("EpiModelHPC")
 
 # Read in fitted network models
-est.pre <- readRDS("est/est.covid-pre.rds")
-est.post <- readRDS("est/est.covid-post.rds")
+est.pre <- readRDS("est/est.pre.rds")
+est.post <- readRDS("est/est.post.base.rds")
 est <- c(est.pre, est.post)
 
 pull_env_vars(num.vars = c("NLT", "PPE",
@@ -40,10 +40,10 @@ param <- param.net(inf.prob.pp = 0.1,
                    act.rate.cc.inter.time = 15,
                    inf.prob.a.rr = 0.5,
                    prop.clinical = c(0.40, 0.25, 0.37, 0.42, 0.51, 0.59, 0.72, 0.76),
-                   act.rate.dx.inter.rr = 0.95,
+                   act.rate.dx.inter.rr = 0.1,
                    act.rate.dx.inter.time = 15,
-                   act.rate.sympt.inter.rr = 1,
-                   act.rate.sympt.inter.time = Inf,
+                   act.rate.sympt.inter.rr = 0.1,
+                   act.rate.sympt.inter.time = 15,
                    network.lockdown.time = NLT, #### 15,
                    ea.rate = 1/4.0,
                    ar.rate = 1/5.0,
