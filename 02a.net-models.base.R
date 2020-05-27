@@ -10,6 +10,13 @@
 library("EpiModelCOVID")
 
 
+# Varying Parameters (Table 3) --------------------------------------------
+
+n.sectors <- 10
+prop.within.sector.post <- 0.98
+n.sectors.pass <- NULL  # If NULL, only within-cabin pass/pass mixing
+
+
 # Model Parameters --------------------------------------------------------
 
 n.crew <- 1045
@@ -32,7 +39,7 @@ crew.ids <- which(type.attr == "c")
 crew.ids
 room.ids
 
-n.sectors <- 10
+# n.sectors <- 10
 room.sectors <- apportion_lr(length(room.ids), 1:n.sectors,
                              rep(1/n.sectors, n.sectors))
 # head(data.frame(room.ids, room.sectors), 200)
@@ -77,20 +84,17 @@ nw <- set.vertex.attribute(nw, "sector", sector)
 
 # Model 1. Pass/Pass Contacts ---------------------------------------------
 
-# Base Target Stats
-md <- 5
-edges <- n.pass * md/2
-target.stats1 <- c(edges, edges)
-
-# Formation model
-formation1 <- ~edges +
-               nodematch("pass.room") +
-               offset(nodefactor("type", levels = -2))
-
 ## 1a. Pre-Lockdown Model
-target.stats1.pre <- target.stats1
-coef.diss <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
-est1.pre <- netest(nw, formation1, target.stats1.pre, coef.diss, coef.form = -Inf,
+md.pre <- 5
+edges.pre <- n.pass * md.pre/2
+target.stats1.pre <- c(edges.pre, edges.pre*0.2)
+
+formation1.pre <- ~edges +
+                   nodematch("pass.room") +
+                   offset(nodefactor("type", levels = -2))
+
+coef.diss1 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+est1.pre <- netest(nw, formation1.pre, target.stats1.pre, coef.diss1, coef.form = -Inf,
                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est1.pre)
 
@@ -102,28 +106,59 @@ print(dx1.pre)
 
 
 ## 1b. Post-Lockdown Model: 20% of contact rate, all within cabin
-post.isolation.scale <- c(0.2, 1)
-target.stats1.post <- target.stats1 * post.isolation.scale
+if (is.null(n.sectors.pass)) {
 
-# Fit the model
-est1.post <- netest(nw, formation1, target.stats1.post, coef.diss, coef.form = -Inf,
-                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
-summary(est1.post)
+  md.post <- 1
+  edges.post <- n.pass * md.post/2
+  target.stats1.post <- c(edges.post, edges.post)
 
-mcmc.diagnostics(est1.post$fit)
-dx1.post <- netdx(est1.post, nsims = 1e4, dynamic = FALSE,
-                  nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-                  set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx1.post)
+  formation1.post <- ~edges +
+                      nodematch("pass.room") +
+                      offset(nodefactor("type", levels = -2))
+
+  est1.post <- netest(nw, formation1.post, target.stats1.post, coef.diss1, coef.form = -Inf,
+                      set.control.ergm = control.ergm(MCMLE.maxit = 500))
+  summary(est1.post)
+
+  mcmc.diagnostics(est1.post$fit)
+  dx1.post <- netdx(est1.post, nsims = 1e4, dynamic = FALSE,
+                    nwstats.formula = ~edges + nodefactor("type", levels = NULL) +
+                                       nodematch("sector", diff = FALSE) +
+                                       nodematch("pass.room", diff = FALSE),
+                    set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+  print(dx1.post)
+
+} else {
+
+  md.post <- md.pre
+  edges.post <- n.pass * md.post/2
+  target.stats1.post <- c(edges.post, edges.post, edges.post*0.2)
+
+  formation1.post <- ~edges +
+                      nodematch("sector") +
+                      nodematch("pass.room") +
+                      offset(nodefactor("type", levels = -2))
+
+  est1.post <- netest(nw, formation1.post, target.stats1.post, coef.diss1, coef.form = -Inf,
+                      set.control.ergm = control.ergm(MCMLE.maxit = 500))
+  summary(est1.post)
+
+  mcmc.diagnostics(est1.post$fit)
+  dx1.post <- netdx(est1.post, nsims = 1e4, dynamic = FALSE,
+                    nwstats.formula = ~edges + nodefactor("type", levels = NULL) +
+                                       nodematch("sector", diff = FALSE) +
+                                       nodematch("pass.room", diff = FALSE),
+                    set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+  print(dx1.post)
+
+}
 
 
 # Model 2: Crew/Crew Contacts ---------------------------------------------
 
 ## 2a. Pre-Lockdown Model
-
-# Target Stats Pre
 md.pre <- 10
-edges.pre <- n.crew * md/2
+edges.pre <- n.crew * md.pre/2
 prop.within.sector.pre <- 0.50
 target.stats2.pre <- c(edges.pre, edges.pre*prop.within.sector.pre)
 
@@ -144,12 +179,9 @@ print(dx2.pre)
 
 
 ## 2b. Post-Lockdown Model
-
-# Target Stats Post
-md.pre <- 2
-edges.pre <- n.crew * md/2
-prop.within.sector.post <- 0.98
-target.stats2.post <- c(edges, edges*prop.within.sector.post)
+md.post <- 2
+edges.post <- n.crew * md.post/2
+target.stats2.post <- c(edges.post, edges.post*prop.within.sector.post)
 
 formation2.post <- ~edges +
                     nodematch("sector") +
@@ -188,10 +220,7 @@ print(dx3.pre)
 
 
 ## 3b. Post-Lockdown Model
-
-# 3 times a day per room
 edges.post <- 3*n.rooms
-prop.within.sector.post <- 0.98
 target.stats3 <- c(edges.post, edges.post*prop.within.sector.post, 0)
 
 formation3.post <- ~edges + nodematch("sector") + nodematch("type")
