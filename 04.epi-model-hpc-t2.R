@@ -53,6 +53,7 @@ param <- param.net(inf.prob.pp = 0.1,
                    dx.start = 14,
                    dx.rate.sympt = c(rep(0, 15), rep(0.25, 5), rep(0.5, 5), rep(0.78, 100)),
                    dx.rate.other = c(rep(0, 15), rep(0, 5), rep(0.01, 5), rep(0.135, 100)),
+                   allow.rescreen = TRUE,
                    mort.rates = mr_vec,
                    mort.dis.mult = 100,
                    exit.rate.pass = 0,
@@ -94,3 +95,5 @@ control <- control.net(simno = fsimno,
 sim <- netsim(est, param, init, control)
 
 savesim(sim, save.min = TRUE, save.max = FALSE, compress = TRUE)
+process_simfiles(simno = simno, min.n = 1, nsims = nsims, compress = TRUE)
+
