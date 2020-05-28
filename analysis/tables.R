@@ -11,29 +11,93 @@ suppressPackageStartupMessages(library("EpiModelCOVID"))
 suppressPackageStartupMessages(library("tidyverse"))
 source("analysis/fx.R")
 
-## Table 2
-
-base <- list.files("analysis/data", pattern = "2000", full.names = TRUE)
+## Table 0 (Base Mortality)
+ref.sim <- 1000
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
 load(base)
 sim.base <- sim
-ref <- epi_stats(sim.base)
+ref <- epi_stats(sim.base, table.num = 2)
 ref
 
-cf.sims <- 2001:2021
-make_table <- function(x) {
-  fn <- list.files(path = "analysis/data/",
-                   pattern = paste0("sim.n",as.character(x)), full.names = TRUE)
-  load(fn)
-  sim.comp <- sim
-  epi_stats(sim.base, sim.comp)
-}
-# make_table(2006)
 
-t2set <- lapply(cf.sims, make_table)
-t2set <- do.call("rbind", t2set)
+## Table 2
+ref.sim <- 2000
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
+load(base)
+sim.base <- sim
+ref <- epi_stats(sim.base, table.num = 2)
+ref
 
-t2 <- full_join(ref, t2set)
-t2 <- add_column(t2, scenario = 2000:2021, .before = 1)
-t2
+cf.sims <- 2001:2025
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 2))
+all <- add_column(full_join(ref, cfset),
+                  scenario = c(ref.sim, cf.sims), .before = 1)
+all
 
-write_csv(t2, "analysis/T2.csv")
+write_csv(all, "analysis/T2.csv")
+
+
+## Table 4
+ref.sim <- 4000
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
+load(base)
+sim.base <- sim
+ref <- epi_stats(sim.base, table.num = 4)
+ref
+
+cf.sims <- 4001:4016
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+all <- add_column(full_join(ref, cfset),
+                  scenario = c(ref.sim, cf.sims), .before = 1)
+all
+
+write_csv(all, "analysis/T4.csv")
+
+
+## Table 5
+ref.sim <- 5000
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
+load(base)
+sim.base <- sim
+ref <- epi_stats(sim.base, table.num = 4)
+ref
+
+cf.sims <- 5001:5016
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+all <- add_column(full_join(ref, cfset),
+                  scenario = c(ref.sim, cf.sims), .before = 1)
+all
+
+write_csv(all, "analysis/T5.csv")
+
+
+## Table 6
+ref.sim <- 6004
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
+load(base)
+sim.base <- sim
+ref <- epi_stats(sim.base, table.num = 4)
+ref
+
+cf.sims <- 6000:6007
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+all <- add_column(full_join(ref, cfset),
+                  scenario = c(ref.sim, cf.sims), .before = 1)
+all
+
+write_csv(all, "analysis/T6a.csv")
+
+ref.sim <- 6012
+base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
+load(base)
+sim.base <- sim
+ref <- epi_stats(sim.base, table.num = 4)
+ref
+
+cf.sims <- 6008:6015
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+all <- add_column(full_join(ref, cfset),
+                  scenario = c(ref.sim, cf.sims), .before = 1)
+all
+
+write_csv(all, "analysis/T6b.csv")
