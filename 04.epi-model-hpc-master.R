@@ -2,7 +2,7 @@
 library("EpiModelHPC")
 
 nsims <- 1000
-ckpt <- TRUE
+ckpt <- FALSE
 
 # Table 2 -----------------------------------------------------------------
 
@@ -255,8 +255,8 @@ vars <- list(NLT = Inf,
              ARPC = 1,
              ARCC = 1,
              ADM = 1,
-             DII = 0.1,
-             SII = 0.1,
+             DII = 0,
+             SII = 0,
              DXTIME = c(1, 2, 5, 10, 15, 20, 25, 50))
 
 sbatch_master(vars = vars,
@@ -280,8 +280,8 @@ vars <- list(NLT = Inf,
              ARPC = 1,
              ARCC = 1,
              ADM = 1,
-             DII = 0.1,
-             SII = 0.1,
+             DII = 0,
+             SII = 0,
              DXTIME = c(1, 2, 5, 10, 15, 20, 25, 50))
 
 sbatch_master(vars = vars,

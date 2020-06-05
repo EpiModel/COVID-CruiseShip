@@ -11,14 +11,6 @@ suppressPackageStartupMessages(library("EpiModelCOVID"))
 suppressPackageStartupMessages(library("tidyverse"))
 source("analysis/fx.R")
 
-## Table 0 (Base Mortality)
-ref.sim <- 1000
-base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
-load(base)
-sim.base <- sim
-ref <- epi_stats(sim.base, table.num = 2)
-ref
-
 
 ## Table 2
 ref.sim <- 2000
@@ -76,11 +68,11 @@ ref.sim <- 6004
 base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
 load(base)
 sim.base <- sim
-ref <- epi_stats(sim.base, table.num = 4)
+ref <- epi_stats(sim.base, table.num = 2)
 ref
 
 cf.sims <- 6000:6007
-cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 2))
 all <- add_column(full_join(ref, cfset),
                   scenario = c(ref.sim, cf.sims), .before = 1)
 all
@@ -91,11 +83,11 @@ ref.sim <- 6012
 base <- list.files("analysis/data", pattern = as.character(ref.sim), full.names = TRUE)
 load(base)
 sim.base <- sim
-ref <- epi_stats(sim.base, table.num = 4)
+ref <- epi_stats(sim.base, table.num = 2)
 ref
 
 cf.sims <- 6008:6015
-cfset <- do.call("rbind", lapply(cf.sims, make_row, 4))
+cfset <- do.call("rbind", lapply(cf.sims, make_row, 2))
 all <- add_column(full_join(ref, cfset),
                   scenario = c(ref.sim, cf.sims), .before = 1)
 all

@@ -7,11 +7,6 @@ library("ggplot2")
 library("ggridges")
 library("gridExtra")
 
-base <- list.files("analysis/data", pattern = "2000", full.names = TRUE)
-load(base)
-sim.base <- sim
-
-
 
 # Figure XXa. Network Lockdown Time x PPE ---------------------------------
 
@@ -46,8 +41,6 @@ head(df)
 table(df$ppe)
 df$ppe <- ifelse(df$ppe == Inf, 0, 1)
 
-scaleFUN <- function(x) sprintf("%.1f", x)
-breaks = seq(0.5, 2.0, 0.1)
 pal <- viridis::viridis(5)
 pal <- RColorBrewer::brewer.pal(11, "PRGn")
 
@@ -123,3 +116,5 @@ ggplot(df, aes(y = as.factor(dx.start))) +
                       name = "PPE", guide = "legend")
 ggsave("analysis/Fig-Lockdown-Ridgeline-Dual-Screening.pdf", height = 6, width = 12)
 
+ggplot(df, aes(group = as.factor(dx.start), y = incid, fill = as.factor(ppe))) +
+  geom_boxplot()

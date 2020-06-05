@@ -24,10 +24,10 @@ sessioninfo::package_info(pkgs = c("network", "networkDynamic", "statnet.common"
                                    "tergmLite", "EpiModelCOVID"),
                           dependencies = FALSE)
 
-# May 28 2020
+# June 4 2020
 # package        * version date       lib source
 # EpiModel       * 1.8.0   2020-05-28 [1] Github (statnet/EpiModel@597c403)
-# EpiModelCOVID  * 1.0.0   2020-05-28 [1] Github (EpiModel/EpiModelCOVID@b3ab7e5)
+# EpiModelCOVID  * 1.0.0   2020-06-04 [1] Github (EpiModel/EpiModelCOVID@41206af)
 # EpiModelHPC      2.1.1   2020-05-18 [1] Github (statnet/EpiModelHPC@a68d3d0)
 # ergm           * 3.10.4  2019-06-10 [1] CRAN (R 3.6.1)
 # network        * 1.16.0  2019-12-01 [1] CRAN (R 3.6.1)
