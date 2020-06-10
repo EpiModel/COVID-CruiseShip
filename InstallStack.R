@@ -24,14 +24,15 @@ sessioninfo::package_info(pkgs = c("network", "networkDynamic", "statnet.common"
                                    "tergmLite", "EpiModelCOVID"),
                           dependencies = FALSE)
 
-# June 4 2020
-# package        * version date       lib source
-# EpiModel       * 1.8.0   2020-05-28 [1] Github (statnet/EpiModel@597c403)
-# EpiModelCOVID  * 1.0.0   2020-06-04 [1] Github (EpiModel/EpiModelCOVID@41206af)
-# EpiModelHPC      2.1.1   2020-05-18 [1] Github (statnet/EpiModelHPC@a68d3d0)
-# ergm           * 3.10.4  2019-06-10 [1] CRAN (R 3.6.1)
-# network        * 1.16.0  2019-12-01 [1] CRAN (R 3.6.1)
-# networkDynamic * 0.10.1  2020-01-21 [1] CRAN (R 3.6.1)
-# statnet.common   4.3.0   2019-06-02 [1] CRAN (R 3.6.1)
-# tergm          * 3.6.1   2019-06-12 [1] CRAN (R 3.6.1)
-# tergmLite      * 2.1.7   2020-05-18 [1] Github (statnet/tergmLite@b989564)
+# June 10 2020
+# package        * version   date       lib source
+# EpiModel       * 1.8.0     2020-06-10 [1] Github (statnet/EpiModel@597c403)
+# EpiModelCOVID  * 1.0.0     2020-06-10 [1] Github (EpiModel/EpiModelCOVID@7835110)
+# EpiModelHPC      2.1.1     2020-06-10 [1] Github (statnet/EpiModelHPC@a68d3d0)
+# ergm           * 3.10.4    2019-06-10 [1] CRAN (R 3.6.0)
+# network        * 1.16.0    2019-12-01 [1] CRAN (R 3.6.0)
+# networkDynamic * 0.10.1    2020-01-21 [1] CRAN (R 3.6.0)
+# statnet.common   4.3.0-230 2020-01-14 [1] Github (statnet/statnet.common@3307a8c)
+# tergm          * 3.6.1     2019-06-12 [1] CRAN (R 3.6.0)
+# tergmLite      * 2.1.7     2020-05-17 [1] Github (statnet/tergmLite@b989564)
+
