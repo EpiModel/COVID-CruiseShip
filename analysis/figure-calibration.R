@@ -20,6 +20,8 @@ summary(as.numeric(tail(sim$epi$se.cuml, 1)))
 which.max(df$se.flow)
 summary(as.numeric(sim$epi$se.flow[14, ]))
 
+df$se.cuml[15]/df$se.cuml[31]
+
 pdf("analysis/Fig1-Calibration.pdf", height = 6, width = 12)
 par(mar = c(3,3,2,1), mgp = c(2,1,0), mfrow = c(1,2))
 plot(sim, y = c("se.cuml", "dx.pos.cuml"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,

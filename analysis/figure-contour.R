@@ -61,9 +61,11 @@ p1 <- ggplot(f1, aes(dx.start, dii)) +
   theme_minimal() +
   scale_y_continuous(expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
-  labs(y = "Diagnosed Isolation Intensity", x = "Mass Screening Start") +
+  labs(y = "Relative Contact Intensity after Diagnosis", x = "Mass Screening Start") +
   scale_fill_viridis(discrete = FALSE, alpha = 1, option = "D", direction = 1) +
   theme(legend.title = element_blank())
+
+filter(f1, dii == 0 & dx.start == 2)
 
 p2 <- ggplot(f2, aes(dx.start, pcr.sens)) +
   geom_raster(aes(fill = incid), interpolate = TRUE) +
@@ -83,7 +85,7 @@ p3 <- ggplot(f3, aes(dii, pcr.sens)) +
   theme_minimal() +
   scale_y_continuous(expand = c(0, 0)) +
   scale_x_continuous(expand = c(0, 0)) +
-  labs(y = "PCR Sensitivity", x = "Diagnosed Isolation Intensity") +
+  labs(y = "PCR Sensitivity", x = "Relative Contact Intensity after Diagnosis") +
   scale_fill_viridis(discrete = FALSE, alpha = 1, option = "D", direction = 1) +
   theme(legend.title = element_blank())
 
