@@ -16,25 +16,23 @@ est.post <- readRDS("est/est.post.base.rds")
 est <- c(est.pre, est.post)
 
 pull_env_vars(num.vars = c("NLT", "PPE",
-                           "ARPP", "ARPC", "ARCC",
-                           "ADM", "SII", "DII",
-                           "DXTIME"))
+                           "ARPP", "ARPC", "ARCC", "ARRT"))
 
-# Model parameters
+# Base model parameters
 source("01.epi-params.R")
-param <- param.net(inf.prob.pp = 0.1,
+param <- param.net(inf.prob.pp = 0.11,
                    inf.prob.pp.inter.rr = 0.6,
                    inf.prob.pp.inter.time = Inf,
                    act.rate.pp = 5,
                    act.rate.pp.inter.rr = 1,
                    act.rate.pp.inter.time = Inf,
-                   inf.prob.pc = 0.1,
+                   inf.prob.pc = 0.11,
                    inf.prob.pc.inter.rr = 0.6,
                    inf.prob.pc.inter.time = 15,
                    act.rate.pc = 1,
                    act.rate.pc.inter.rr = 1,
                    act.rate.pc.inter.time = Inf,
-                   inf.prob.cc = 0.1,
+                   inf.prob.cc = 0.11,
                    inf.prob.cc.inter.rr = 0.6,
                    inf.prob.cc.inter.time = 15,
                    act.rate.cc = 1,
@@ -52,55 +50,37 @@ param <- param.net(inf.prob.pp = 0.1,
                    eip.rate = 1/4.0,
                    ipic.rate = 1/1.5,
                    icr.rate = 1/3.5,
-                   dx.rate.sympt = c(rep(0, 15), rep(0.10, 5), rep(0.4, 5), rep(0.6, 100)),
+                   pcr.sens = 0.8,
+                   dx.rate.sympt = c(rep(0, 15), rep(0.2, 5), rep(0.3, 5), rep(0.8, 100)),
                    dx.rate.other = c(rep(0, 15), rep(0, 5), rep(0.07, 5), rep(0.19, 100)),
                    allow.rescreen = FALSE,
                    mort.rates = mr_vec,
-                   mort.dis.mult = 205,
+                   mort.dis.mult = 180,
                    exit.rate.pass = 0,
                    exit.rate.crew = 0,
                    exit.elig.status = c("ip", "ic"),
                    exit.require.dx = FALSE)
 
-NLT = Inf
-PPE = Inf
-ARPP = 1
-ARPC = 1
-ARCC = 1
-ADM = 1
-DII = 0
-SII = 0
-DXTIME = 1
 # Intervention parameters
-param$act.rate.pp.inter.rr = 1
-param$act.rate.pp.inter.time = NLT
+param$act.rate.pp.inter.rr = ARPP
+param$act.rate.pp.inter.time = ARRT
 param$inf.prob.pc.inter.time = PPE
 param$act.rate.pc.inter.rr = ARPC
-param$act.rate.pc.inter.time = NLT
+param$act.rate.pc.inter.time = ARRT
 param$inf.prob.cc.inter.time = PPE
 param$act.rate.cc.inter.rr = ARCC
-param$act.rate.cc.inter.time = NLT
+param$act.rate.cc.inter.time = ARRT
 param$network.lockdown.time = NLT
-param$act.rate.dx.inter.rr = DII
-param$act.rate.sympt.inter.rr = SII
-param$act.rate.dx.inter.time = DXTIME
-param$act.rate.sympt.inter.time = DXTIME
-param$dx.rate.sympt = rep(0.5, 100)
-
-dx.vec <- rep(0, 100)
-dx.vec[DXTIME:length(dx.vec)] <- 0.5
-param$dx.rate.other = dx.vec
 
 # Initial conditions
 init <- init.net(e.num.pass = 8,
                  e.num.crew = 0)
 
 # Control settings
-devtools::load_all("~/Dropbox/Dev/EpiModelCOVID")
-control <- control.net(simno = 1,
+control <- control.net(simno = fsimno,
                        nsteps = 31,
-                       nsims = 1,
-                       ncores = 1,
+                       nsims = nsims,
+                       ncores = ncores,
                        initialize.FUN = init_covid_ship,
                        aging.FUN = aging_covid_ship,
                        departures.FUN = deaths_covid_ship,
@@ -121,9 +101,9 @@ control <- control.net(simno = 1,
                                         "dx.FUN",
                                         "get_prev.FUN"),
                        depend = TRUE,
-                       skip.check = TRUE,
-                       verbose = TRUE)
-debug(infect_covid_ship)
+                       skip.check = TRUE)
+
 sim <- netsim(est, param, init, control)
 
-
+savesim(sim, save.min = TRUE, save.max = FALSE, compress = TRUE)
+process_simfiles(simno = simno, min.n = 1, nsims = nsims, compress = TRUE)

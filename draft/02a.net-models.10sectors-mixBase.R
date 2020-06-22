@@ -83,29 +83,29 @@ nw <- set.vertex.attribute(nw, "sector", sector)
 
 # Model 1. Pass/Pass Contacts ---------------------------------------------
 
-## 1a. Pre-Lockdown Model
-md.pre <- 5
-edges.pre <- n.pass * md.pre/2
-target.stats1.pre <- c(edges.pre, edges.pre/md.pre)
+# ## 1a. Pre-Lockdown Model
+# md.pre <- 5
+# edges.pre <- n.pass * md.pre/2
+# target.stats1.pre <- c(edges.pre, edges.pre/md.pre)
+#
+# formation1.pre <- ~edges +
+#                    nodematch("pass.room") +
+#                    offset(nodefactor("type", levels = -2))
+#
+# coef.diss1 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+# est1.pre <- netest(nw, formation1.pre, target.stats1.pre, coef.diss1, coef.form = -Inf,
+#                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
+# summary(est1.pre)
+#
+# mcmc.diagnostics(est1.pre$fit)
+# dx1.pre <- netdx(est1.pre, nsims = 1e4, dynamic = FALSE,
+#                  nwstats.formula = ~edges + nodefactor("type", levels = NULL),
+#                  set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+# print(dx1.pre)
 
-formation1.pre <- ~edges +
-                   nodematch("pass.room") +
-                   offset(nodefactor("type", levels = -2))
 
-coef.diss1 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
-est1.pre <- netest(nw, formation1.pre, target.stats1.pre, coef.diss1, coef.form = -Inf,
-                   set.control.ergm = control.ergm(MCMLE.maxit = 500))
-summary(est1.pre)
-
-mcmc.diagnostics(est1.pre$fit)
-dx1.pre <- netdx(est1.pre, nsims = 1e4, dynamic = FALSE,
-                 nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-                 set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx1.pre)
-
-
-## 1b. Post-Lockdown Model: 20% of contact rate, all within cabin
-md.post <- 1
+## 1b. Post-Lockdown Model
+md.post <- 5
 edges.post <- n.pass * md.post/2
 target.stats1.post <- c(edges.post, edges.post, edges.post/md.post)
 
@@ -114,6 +114,7 @@ formation1.post <- ~edges +
                     nodematch("pass.room") +
                     offset(nodefactor("type", levels = -2))
 
+coef.diss1 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 est1.post <- netest(nw, formation1.post, target.stats1.post, coef.diss1, coef.form = -Inf,
                     set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est1.post)
@@ -127,40 +128,39 @@ dx1.post <- netdx(est1.post, nsims = 1e4, dynamic = FALSE,
 print(dx1.post)
 
 
-
-
 # Model 2: Crew/Crew Contacts ---------------------------------------------
 
 ## 2a. Pre-Lockdown Model
-md.pre <- 10
-edges.pre <- n.crew * md.pre/2
-prop.within.sector.pre <- 0.50
-target.stats2.pre <- c(edges.pre, edges.pre*prop.within.sector.pre)
-
-formation2.pre <- ~edges +
-                   nodematch("sector") +
-                   offset(nodefactor("type", levels = -1))
-coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
-
-est2.pre <- netest(nw, formation2.pre, target.stats2.pre, coef.diss2, coef.form = -Inf,
-                   set.control.ergm = control.ergm(MCMLE.maxit = 500))
-summary(est2.pre)
-
-mcmc.diagnostics(est2.pre$fit)
-dx2.pre <- netdx(est2.pre, nsims = 1e4, dynamic = FALSE,
-                  nwstats.formula = ~edges + nodefactor("type", levels = NULL),
-                  set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
-print(dx2.pre)
+# md.pre <- 10
+# edges.pre <- n.crew * md.pre/2
+# prop.within.sector.pre <- 0.50
+# target.stats2.pre <- c(edges.pre, edges.pre*prop.within.sector.pre)
+#
+# formation2.pre <- ~edges +
+#                    nodematch("sector") +
+#                    offset(nodefactor("type", levels = -1))
+# coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+#
+# est2.pre <- netest(nw, formation2.pre, target.stats2.pre, coef.diss2, coef.form = -Inf,
+#                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
+# summary(est2.pre)
+#
+# mcmc.diagnostics(est2.pre$fit)
+# dx2.pre <- netdx(est2.pre, nsims = 1e4, dynamic = FALSE,
+#                   nwstats.formula = ~edges + nodefactor("type", levels = NULL),
+#                   set.control.ergm = control.simulate.ergm(MCMC.burnin = 1e6))
+# print(dx2.pre)
 
 
 ## 2b. Post-Lockdown Model
-md.post <- 2
+md.post <- 10
 edges.post <- n.crew * md.post/2
 target.stats2.post <- c(edges.post, edges.post*prop.within.sector.post)
 
 formation2.post <- ~edges +
                     nodematch("sector") +
                     offset(nodefactor("type", levels = -1))
+coef.diss2 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 
 est2.post <- netest(nw, formation2.post, target.stats2.post, coef.diss2, coef.form = -Inf,
                     set.control.ergm = control.ergm(MCMLE.maxit = 500))
@@ -176,30 +176,32 @@ print(dx2.post)
 # Model 3: Crew/Pass Contacts ---------------------------------------------
 
 ## 3a. Pre-Lockdown Model
-md.pre <- 8
-edges.pre <- md.pre * n.rooms
-target.stats3.pre <- c(edges.pre, 0)
-
-formation3.pre <- ~edges + nodematch("type")
-coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
-
-est3.pre <- netest(nw, formation3.pre, target.stats3.pre, coef.diss3,
-                   set.control.ergm = control.ergm(MCMLE.maxit = 500))
-summary(est3.pre)
-
-mcmc.diagnostics(est3.pre$fit)
-dx3.pre <- netdx(est3.pre, nsims = 1e4, dynamic = FALSE,
-                 nwstats.formula = ~edges + nodemix("type", levels = NULL) +
-                                    nodematch("sector"))
-print(dx3.pre)
+# md.pre <- 8
+# edges.pre <- md.pre * n.rooms
+# target.stats3.pre <- c(edges.pre, 0)
+#
+# formation3.pre <- ~edges + nodematch("type")
+# coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
+#
+# est3.pre <- netest(nw, formation3.pre, target.stats3.pre, coef.diss3,
+#                    set.control.ergm = control.ergm(MCMLE.maxit = 500))
+# summary(est3.pre)
+#
+# mcmc.diagnostics(est3.pre$fit)
+# dx3.pre <- netdx(est3.pre, nsims = 1e4, dynamic = FALSE,
+#                  nwstats.formula = ~edges + nodemix("type", levels = NULL) +
+#                                     nodematch("sector"))
+# print(dx3.pre)
 
 
 ## 3b. Post-Lockdown Model
-edges.post <- 3*n.rooms
+md.post <- 8
+edges.post <- md.post * n.rooms
 target.stats3 <- c(edges.post, edges.post*prop.within.sector.post, 0)
 
 formation3.post <- ~edges + nodematch("sector") + nodematch("type")
 
+coef.diss3 <- dissolution_coefs(dissolution = ~offset(edges), duration = 1)
 est3.post <- netest(nw, formation3.post, target.stats3, coef.diss3,
                     set.control.ergm = control.ergm(MCMLE.maxit = 500))
 summary(est3.post)
@@ -212,10 +214,10 @@ print(dx3.post)
 
 # Save Data ---------------------------------------------------------------
 
-# Pre-Lockdown
-est.pre <- list(est1.pre, est2.pre, est3.pre)
-saveRDS(est.pre, file = "est/est.pre.rds")
+# # Pre-Lockdown
+# est.pre <- list(est1.pre, est2.pre, est3.pre)
+# saveRDS(est.pre, file = "est/est.pre.rds")
 
 # Post-Lockdown
 est.post <- list(est1.post, est2.post, est3.post)
-saveRDS(est.post, file = "est/est.post.base.rds")
+saveRDS(est.post, file = "est/est.post.10sector-mixBase.rds")

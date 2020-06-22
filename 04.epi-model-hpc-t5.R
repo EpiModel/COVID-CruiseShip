@@ -15,11 +15,6 @@ est.pre <- readRDS("est/est.pre.rds")
 est.post <- readRDS("est/est.post.base.rds")
 est <- c(est.pre, est.post)
 
-pull_env_vars(num.vars = c("NLT", "PPE",
-                           "ARPP", "ARPC", "ARCC",
-                           "ADM", "SII", "DII",
-                           "DXTIME"))
-
 # Model parameters
 source("01.epi-params.R")
 param <- param.net(inf.prob.pp = 0.11,
@@ -64,6 +59,10 @@ param <- param.net(inf.prob.pp = 0.11,
                    exit.require.dx = FALSE)
 
 # Intervention parameters
+pull_env_vars(num.vars = c("NLT", "PPE",
+                           "ARPP", "ARPC", "ARCC",
+                           "ADM", "SII", "DII",
+                           "DXTIME", "PCR"))
 param$act.rate.pp.inter.rr = ARPP
 param$act.rate.pp.inter.time = NLT
 param$inf.prob.pc.inter.time = PPE
@@ -78,10 +77,10 @@ param$act.rate.sympt.inter.rr = SII
 param$act.rate.dx.inter.time = DXTIME
 param$act.rate.sympt.inter.time = DXTIME
 param$dx.rate.sympt = rep(1, 100)
-
 dx.vec <- rep(0, 100)
 dx.vec[DXTIME:length(dx.vec)] <- 1
 param$dx.rate.other = dx.vec
+param$pcr.sens = PCR
 
 # Initial conditions
 init <- init.net(e.num.pass = 8,

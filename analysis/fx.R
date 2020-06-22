@@ -90,6 +90,10 @@ epi_stats <- function(sim.base,
     x <- sim.comp
     ia <- calc_quants_ia(sim.base, sim.comp, "se.flow", qnt.low, qnt.high)
     da <- calc_quants_ia(sim.base, sim.comp, "d.ic.flow", qnt.low, qnt.high)
+    ia.pp <- calc_quants_ia(sim.base, sim.comp, "se.pp.flow", qnt.low, qnt.high)
+    ia.pc <- calc_quants_ia(sim.base, sim.comp, "se.pc.flow", qnt.low, qnt.high)
+    ia.cp <- calc_quants_ia(sim.base, sim.comp, "se.cp.flow", qnt.low, qnt.high)
+    ia.cc <- calc_quants_ia(sim.base, sim.comp, "se.cc.flow", qnt.low, qnt.high)
   }
 
   # incidence rate
@@ -102,32 +106,44 @@ epi_stats <- function(sim.base,
 
   # Table Output -------------------------------------------------
 
+  if (table.num == 1) {
+    if (is.null(sim.comp)) {
+      dat <- cbind(ci, nia = NA, pia = NA,
+                   d, nda = NA, pda = NA)
+    } else {
+      dat <- cbind(ci, nia = ia$nia, pia = ia$pia,
+                   d, nda = da$nia, pda = da$pia)
+    }
+  }
+
   if (table.num == 2) {
     if (is.null(sim.comp)) {
-      dat <- cbind(ci, nia = NA, pia = NA,
-                   ci.pp,
-                   ci.pc,
-                   ci.cp,
-                   ci.cc,
-                   d, nda = NA, pda = NA)
+      dat <- cbind(ci, pia = NA,
+                   ci.pp, pia.pp = NA,
+                   ci.pc, pia.pc = NA,
+                   ci.cp, pia.cp = NA,
+                   ci.cc, pia.cc = NA)
     } else {
-      dat <- cbind(ci, nia = ia$nia, pia = ia$pia,
-                   ci.pp,
-                   ci.pc,
-                   ci.cp,
-                   ci.cc,
-                   d, nda = da$nia, pda = da$pia)
+      dat <- cbind(ci, pia = ia$pia,
+                   ci.pp, pia.pp = ia.pp$pia,
+                   ci.pc, pia.pc = ia.pc$pia,
+                   ci.cp, pia.cp = ia.cp$pia,
+                   ci.cc, pia.cc = ia.cc$pia)
     }
   }
+
   if (table.num == 4) {
     if (is.null(sim.comp)) {
-      dat <- cbind(ci, nia = NA, pia = NA,
-                   d, nda = NA, pda = NA)
+      dat <- cbind(ci, nia = NA,
+                   ci.pp, ci.pc, ci.cp, ci.cc,
+                   d, nda = NA)
     } else {
-      dat <- cbind(ci, nia = ia$nia, pia = ia$pia,
-                   d, nda = da$nia, pda = da$pia)
+      dat <- cbind(ci, nia = ia$nia,
+                   ci.pp, ci.pc, ci.cp, ci.cc,
+                   d, nda = da$nia)
     }
   }
+
 
   out <- as.data.frame(dat, stringsAsFactors = FALSE)
 
@@ -135,7 +151,7 @@ epi_stats <- function(sim.base,
 }
 
 make_row <- function(x, table.num) {
-  fn <- list.files(path = "analysis/data/",
+  fn <- list.files(path = "analysis/dat/",
                    pattern = paste0("sim.n",as.character(x)), full.names = TRUE)
   load(fn)
   sim.comp <- sim

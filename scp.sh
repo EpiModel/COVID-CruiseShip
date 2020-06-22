@@ -7,4 +7,6 @@ scp 01.epi-params.R 04.epi-model-hpc*.R runsim*.sh master.*.sh mox:/gscratch/csd
 
 
 # Receive
-scp mox:/gscratch/csde/sjenness/cruise/data/*.rda analysis/data/
+scp mox:/gscratch/csde/sjenness/cruise/data/*.rda analysis/dat/
+
+scp mox:/gscratch/csde/sjenness/cruise/data/hold/*.zip analysis/

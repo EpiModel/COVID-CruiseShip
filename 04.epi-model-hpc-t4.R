@@ -10,16 +10,31 @@
 suppressPackageStartupMessages(library("EpiModelCOVID"))
 library("EpiModelHPC")
 
+pull_env_vars(num.vars = c("NLT", "PPE",
+                           "T4SCEN"))
+
 # Read in fitted network models
 est.pre <- readRDS("est/est.pre.rds")
-est.post <- readRDS("est/est.post.base.rds")
+
+if (T4SCEN == 1) est.post <- readRDS("est/est.post.base.rds")
+if (T4SCEN == 2) est.post <- readRDS("est/est.post.1sector-mixBase.rds")
+if (T4SCEN == 3) est.post <- readRDS("est/est.post.2sector-mixBase.rds")
+if (T4SCEN == 4) est.post <- readRDS("est/est.post.5sector-mixBase.rds")
+if (T4SCEN == 5) est.post <- readRDS("est/est.post.10sector-mixBase.rds")
+if (T4SCEN == 6) est.post <- readRDS("est/est.post.15sector-mixBase.rds")
+if (T4SCEN == 7) est.post <- readRDS("est/est.post.20sector-mixBase.rds")
+if (T4SCEN == 8) est.post <- readRDS("est/est.post.25sector-mixBase.rds")
+if (T4SCEN == 9) est.post <- readRDS("est/est.post.10sector-mix90.rds")
+if (T4SCEN == 10) est.post <- readRDS("est/est.post.10sector-mix80.rds")
+if (T4SCEN == 11) est.post <- readRDS("est/est.post.10sector-mix70.rds")
+if (T4SCEN == 12) est.post <- readRDS("est/est.post.10sector-mix60.rds")
+if (T4SCEN == 13) est.post <- readRDS("est/est.post.10sector-mix50.rds")
+
 est <- c(est.pre, est.post)
 
-pull_env_vars(num.vars = c("NLT", "PPE",
-                           "ARPP", "ARPC", "ARCC",
-                           "ADM", "SII", "DII"))
 
-# Model parameters
+
+# Base model parameters
 source("01.epi-params.R")
 param <- param.net(inf.prob.pp = 0.11,
                    inf.prob.pp.inter.rr = 0.6,
@@ -63,18 +78,12 @@ param <- param.net(inf.prob.pp = 0.11,
                    exit.require.dx = FALSE)
 
 # Intervention parameters
-param$act.rate.pp.inter.rr = ARPP
 param$act.rate.pp.inter.time = NLT
 param$inf.prob.pc.inter.time = PPE
-param$act.rate.pc.inter.rr = ARPC
 param$act.rate.pc.inter.time = NLT
 param$inf.prob.cc.inter.time = PPE
-param$act.rate.cc.inter.rr = ARCC
 param$act.rate.cc.inter.time = NLT
 param$network.lockdown.time = NLT
-param$act.rate.dx.inter.rr = DII
-param$act.rate.sympt.inter.rr = SII
-param$dx.rate.other = param$dx.rate.other * ADM
 
 # Initial conditions
 init <- init.net(e.num.pass = 8,

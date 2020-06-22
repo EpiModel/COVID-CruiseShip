@@ -10,9 +10,9 @@ library("gridExtra")
 
 # Figure XXa. Network Lockdown Time x PPE ---------------------------------
 
-# show with PPE and no PPE next to each other
+# PPE and no PPE next to each other
 
-sims <- 2000:2013
+sims <- 1000:1013
 length(sims)
 
 for (i in seq_along(sims)) {
@@ -38,7 +38,7 @@ for (i in seq_along(sims)) {
 }
 
 head(df)
-table(df$ppe)
+table(df$ppe, df$nlt)
 df$ppe <- ifelse(df$ppe == Inf, 0, 1)
 
 pal <- viridis::viridis(5)

@@ -16,9 +16,10 @@ est.post <- readRDS("est/est.post.base.rds")
 est <- c(est.pre, est.post)
 
 pull_env_vars(num.vars = c("NLT", "PPE",
-                           "ARPP", "ARPC", "ARCC"))
+                           "ARPP", "ARPC", "ARCC",
+                           "ADM", "SII", "DII"))
 
-# Base model parameters
+# Model parameters
 source("01.epi-params.R")
 param <- param.net(inf.prob.pp = 0.11,
                    inf.prob.pp.inter.rr = 0.6,
@@ -71,6 +72,9 @@ param$inf.prob.cc.inter.time = PPE
 param$act.rate.cc.inter.rr = ARCC
 param$act.rate.cc.inter.time = NLT
 param$network.lockdown.time = NLT
+param$act.rate.dx.inter.rr = DII
+param$act.rate.sympt.inter.rr = SII
+param$dx.rate.other = param$dx.rate.other * ADM
 
 # Initial conditions
 init <- init.net(e.num.pass = 8,
@@ -107,4 +111,3 @@ sim <- netsim(est, param, init, control)
 
 savesim(sim, save.min = TRUE, save.max = FALSE, compress = TRUE)
 process_simfiles(simno = simno, min.n = 1, nsims = nsims, compress = TRUE)
-

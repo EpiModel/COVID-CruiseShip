@@ -3,4 +3,4 @@
 #SBATCH -o ./out/%x_%a.out
  
 source ~/loadR.sh 
-Rscript 04.epi-model-hpc-t4.R
+Rscript 04.epi-model-hpc-t5.R

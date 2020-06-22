@@ -50,3 +50,5 @@ analysis/data/*
 analysis/*.pdf
 analysis/*.csv
 *.pdf
+
+analysis/dat/*.rda
