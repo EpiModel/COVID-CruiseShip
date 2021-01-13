@@ -4,7 +4,7 @@ This repository holds the source to code to reproduce the analysis featured in o
 
 ## Citation
 
-> 2.	Jenness SM, Wilebrand KS, Malik AA, Lopman BA, Omer S. Modeling Dynamic Network Strategies for SARS-CoV-2 Control on a Cruise Ship. _Under Review._  [[Pre-Print]](https://doi.org/10.1101/2020.08.26.20182766)
+> Jenness SM, Wilebrand KS, Malik AA, Lopman BA, Omer S. Modeling Dynamic Network Strategies for SARS-CoV-2 Control on a Cruise Ship. _Under Review._  [[Pre-Print]](https://doi.org/10.1101/2020.08.26.20182766)
 
 <img src="https://github.com/EpiModel/COVID-CruiseShip/raw/master/analysis/Fig1.png">
 
