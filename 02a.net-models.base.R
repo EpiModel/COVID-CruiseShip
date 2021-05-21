@@ -77,6 +77,7 @@ summary(age)
 nw <- network.initialize(n, directed = FALSE)
 nw <- set.vertex.attribute(nw, "type", type.attr)
 nw <- set.vertex.attribute(nw, "pass.room", room.ids.pass, pass.ids)
+nw <- set.vertex.attribute(nw, "pass.room", 0, crew.ids)
 nw <- set.vertex.attribute(nw, "age", age)
 nw <- set.vertex.attribute(nw, "sector", sector)
 
@@ -214,8 +215,8 @@ print(dx3.post)
 
 # Pre-Lockdown
 est.pre <- list(est1.pre, est2.pre, est3.pre)
-saveRDS(est.pre, file = "est/est.pre.rds")
+saveRDS(est.pre, file = "est/est.pre.v2.rds")
 
 # Post-Lockdown
 est.post <- list(est1.post, est2.post, est3.post)
-saveRDS(est.post, file = "est/est.post.base.rds")
+saveRDS(est.post, file = "est/est.post.base.v2.rds")

@@ -35,5 +35,7 @@ post <- c(10, 20, 61, 64, 70,
           285, 355, 454, 542, 621, 634)
 pos.tests.day <- c(pre, post)
 
+diff(pos.tests.day)
+
 # par(mar = c(3,3,1,1), mgp = c(2,1,0))
 # plot(pos.tests.day, type = "b", col = "firebrick", lwd = 1.5, pch = 20)
