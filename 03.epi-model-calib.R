@@ -10,8 +10,8 @@
 library("EpiModelCOVID")
 
 # Read in fitted network models
-est.pre <- readRDS("est/est.pre.rds")
-est.post <- readRDS("est/est.post.base.rds")
+est.pre <- readRDS("est/est.pre.v2.rds")
+est.post <- readRDS("est/est.post.base.v2.rds")
 est <- c(est.pre, est.post)
 
 # Model parameters
@@ -62,31 +62,31 @@ init <- init.net(e.num.pass = 8,
                  e.num.crew = 0)
 
 # Control settings
-# devtools::load_all("~/Dropbox/Dev/EpiModelCOVID")
+# pkgload::load_all("~/git/EpiModelCOVID")
 control <- control.net(nsteps = 31,
-                       nsims = 100,
-                       ncores = 4,
+                       nsims = 100, #100,
+                       ncores = 4, #4,
                        initialize.FUN = init_covid_ship,
                        aging.FUN = aging_covid_ship,
                        departures.FUN = deaths_covid_ship,
-                       offload.FUN = offload_covid_ship,
                        arrivals.FUN = NULL,
                        edges_correct.FUN = NULL,
                        resim_nets.FUN = resim_nets_covid_ship,
                        infection.FUN = infect_covid_ship,
                        recovery.FUN = progress_covid_ship,
                        dx.FUN = dx_covid_ship,
-                       get_prev.FUN = prevalence_covid_ship,
+                       prevalence.FUN = prevalence_covid_ship,
+                       nwupdate.FUN = NULL,
                        module.order = c("aging.FUN",
                                         "departures.FUN",
-                                        "offload.FUN",
                                         "resim_nets.FUN",
                                         "infection.FUN",
                                         "recovery.FUN",
                                         "dx.FUN",
-                                        "get_prev.FUN"),
-                       depend = TRUE,
-                       skip.check = TRUE)
+                                        "prevalence.FUN"),
+                       resimulate.network = TRUE,
+                       skip.check = TRUE,
+                       tergmLite = TRUE)
 
 sim <- netsim(est, param, init, control)
 # print(sim)
@@ -118,44 +118,85 @@ sum(df$d.ic.flow)
 sum(df$se.flow)
 summary(colSums(sim$epi$se.flow))
 
-# Plot outcomes
-par(mar = c(3,3,1,1), mgp = c(2,1,0))
-pal <- RColorBrewer::brewer.pal(9, "Set1")
-pal <- rainbow(9)
-pal <- 1:9
+par(mar = c(3,3,2,1), mgp = c(2,1,0))
+plot(sim, y = c("se.flow", "nDx.pos"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,
+     main = "Model Calibration", xlab = "Day", ylab = "Cumulative Count", ylim = c(0, 200))
+legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical Diagnoses"),
+       lty = c(1,1,2), lwd = 2, col = c(2, 4, 1), bty = "n")
+lines(c(0, diff(pos.tests.day)), lty = 2, lwd = 2)
 
-plot(sim,
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
 
-plot(sim, y = c("i.pass.num", "i.crew.num"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts = 1, qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
+# ABC ---------------------------------------------------------------------
 
-plot(sim, y = c("se.flow", "ea.flow", "ar.flow"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
+install.packages("EasyABC")
+library("EasyABC")
 
-plot(sim, y = c("se.flow", "eip.flow", "ipic.flow", "icr.flow"),
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
+priors <- list(c("unif", 0.1, 0.4),
+               c("unif", 1, 2))
 
-plot(sim, y = c("se.pp.flow", "se.pc.flow", "se.cp.flow", "se.cc.flow"),
-     mean.col = pal, mean.lwd = 2, mean.smooth = FALSE, qnts = FALSE,
-     legend = TRUE)
+control.sm <- control.net(nsteps = 31,
+                       nsims = 1, #100,
+                       ncores = 1, #4,
+                       initialize.FUN = init_covid_ship,
+                       aging.FUN = aging_covid_ship,
+                       departures.FUN = deaths_covid_ship,
+                       arrivals.FUN = NULL,
+                       edges_correct.FUN = NULL,
+                       resim_nets.FUN = resim_nets_covid_ship,
+                       infection.FUN = infect_covid_ship,
+                       recovery.FUN = progress_covid_ship,
+                       dx.FUN = dx_covid_ship,
+                       prevalence.FUN = prevalence_covid_ship,
+                       nwupdate.FUN = NULL,
+                       module.order = c("aging.FUN",
+                                        "departures.FUN",
+                                        "resim_nets.FUN",
+                                        "infection.FUN",
+                                        "recovery.FUN",
+                                        "dx.FUN",
+                                        "prevalence.FUN"),
+                       resimulate.network = TRUE,
+                       skip.check = TRUE,
+                       tergmLite = TRUE,
+                       verbose = FALSE)
 
-plot(sim, y = "d.flow",
-     mean.col = pal, mean.lwd = 1, mean.smooth = TRUE, qnts = FALSE,
-     qnts.col = pal, qnts.alpha = 0.25, qnts.smooth = TRUE,
-     legend = TRUE)
+f <- function(x) {
+  params <- param
 
-plot(sim, y = "Rt", mean.smooth = FALSE)
-plot(sim, y = "se.cuml")
-abline(h = n.pass + n.crew)
+  param$dx.rate.sympt = c(rep(0, 15), rep(x[1], 5), rep(x[2], 5), rep(x[3], 100))
+  # dx.rate.other = c(rep(0, 15), rep(0, 5), rep(0.07, 5), rep(0.19, 100))
 
-df$se.flow
-cumsum(df$se.flow)
+  inits <- init
+  controls <- control.sm
+  sim <- netsim(est, params, inits, controls)
+  sim <- mutate_epi(sim, se.cuml = cumsum(se.flow),
+                    dx.cuml = cumsum(nDx),
+                    dx.pos.cuml = cumsum(nDx.pos),
+                    totI = e.num + a.num + ip.num + ic.num)
+  df <- as.data.frame(sim)
+  out <- df$dx.pos.cuml
+  return(out)
+}
+
+f(c(0.2, 0.3, 0.8))
+
+priors <- list(c("unif", 0.15, 0.25),
+               c("unif", 0.25, 0.35),
+               c("unif", 0.75, 0.85))
+
+targets <- pos.tests.day
+
+fit1 <- ABC_rejection(model = f,
+                      prior = priors,
+                      nb_simul = 100,
+                      summary_stat_target = targets,
+                      tol = 0.05)
+
+fit2 <- ABC_sequential(method = "Lenormand",
+                       model = f,
+                       prior = priors,
+                       summary_stat_target = targets,
+                       nb_simul = 250,
+                       p_acc = 0.05,
+                       alpha = 0.25,
+                       progress_bar = TRUE)
