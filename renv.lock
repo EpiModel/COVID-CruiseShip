@@ -32,15 +32,10 @@
     },
     "EpiModel": {
       "Package": "EpiModel",
-      "Version": "1.8.0",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "EpiModel",
-      "RemoteUsername": "statnet",
-      "RemoteRef": "v1.8.0",
-      "RemoteSha": "597c403ada019cf96c95b914252566a441874200",
-      "Hash": "712f525665545b3fe26f3e5b3e50f8bb"
+      "Version": "2.0.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e8ef4ea59b9258ff9104507db2e3f4ed"
     },
     "EpiModelCOVID": {
       "Package": "EpiModelCOVID",
@@ -50,9 +45,9 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "EpiModelCOVID",
       "RemoteUsername": "EpiModel",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "78351106c418515343645c24dee32fae6073f5aa",
-      "Hash": "9fb06cc72104fe1ae04bc51005e628fe"
+      "RemoteRef": "revision-r1",
+      "RemoteSha": "44d9f5194200e4aa8b75757679c075b74f00c27e",
+      "Hash": "c2a8816ec495b67ffabec4af2fb52d05"
     },
     "EpiModelHPC": {
       "Package": "EpiModelHPC",
@@ -668,6 +663,13 @@
       "Repository": "CRAN",
       "Hash": "76c9e04c712a05848ae7a23d2f170a40"
     },
+    "remotes": {
+      "Package": "remotes",
+      "Version": "2.3.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "92ea77818b3bb83c699008451af32b86"
+    },
     "renv": {
       "Package": "renv",
       "Version": "0.13.2",
@@ -775,15 +777,10 @@
     },
     "tergmLite": {
       "Package": "tergmLite",
-      "Version": "2.1.7",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "tergmLite",
-      "RemoteUsername": "statnet",
-      "RemoteRef": "v2.1.7",
-      "RemoteSha": "b9895642b2bc7d8455dfc18494db4782cbb06272",
-      "Hash": "725bba30c763a1f2bbb40fc7ed38f2ea"
+      "Version": "2.2.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "330a5fd83c328ff24106dfd26fbc4ee0"
     },
     "tibble": {
       "Package": "tibble",
