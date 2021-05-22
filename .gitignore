@@ -52,3 +52,4 @@ analysis/*.csv
 *.pdf
 
 analysis/dat/*.rda
+renv/
