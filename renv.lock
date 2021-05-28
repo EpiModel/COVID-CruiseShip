@@ -25,10 +25,10 @@
     },
     "DEoptimR": {
       "Package": "DEoptimR",
-      "Version": "1.0-8",
+      "Version": "1.0-9",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "4fdd17df6c1b897cb59bdd9cf6621a43"
+      "Hash": "feae038aefb289b48ea8254094f33732"
     },
     "EasyABC": {
       "Package": "EasyABC",
@@ -39,10 +39,15 @@
     },
     "EpiModel": {
       "Package": "EpiModel",
-      "Version": "2.0.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "e8ef4ea59b9258ff9104507db2e3f4ed"
+      "Version": "2.0.6",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "EpiModel",
+      "RemoteUsername": "statnet",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "daae94bcbd24b17f556d79b34a855159d5794bbf",
+      "Hash": "3c41e754365952732e6c72c730ddf947"
     },
     "EpiModelCOVID": {
       "Package": "EpiModelCOVID",
