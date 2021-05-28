@@ -57,6 +57,47 @@ param <- param.net(inf.prob.pp = 0.11,
                    exit.elig.status = c("ip", "ic"),
                    exit.require.dx = FALSE)
 
+param <- param.net(inf.prob.pp = 0.10455227,
+                   inf.prob.pp.inter.rr = 0.6,
+                   inf.prob.pp.inter.time = Inf,
+                   act.rate.pp = 5,
+                   act.rate.pp.inter.rr = 1,
+                   act.rate.pp.inter.time = Inf,
+                   inf.prob.pc = 0.10455227,
+                   inf.prob.pc.inter.rr = 0.6,
+                   inf.prob.pc.inter.time = 15,
+                   act.rate.pc = 1,
+                   act.rate.pc.inter.rr = 1,
+                   act.rate.pc.inter.time = Inf,
+                   inf.prob.cc = 0.10455227,
+                   inf.prob.cc.inter.rr = 0.6,
+                   inf.prob.cc.inter.time = 15,
+                   act.rate.cc = 1,
+                   act.rate.cc.inter.rr = 1,
+                   act.rate.cc.inter.time = Inf,
+                   inf.prob.a.rr = 0.5,
+                   prop.clinical = c(0.40, 0.25, 0.37, 0.42, 0.51, 0.59, 0.72, 0.76),
+                   act.rate.dx.inter.rr = 0.1,
+                   act.rate.dx.inter.time = 15,
+                   act.rate.sympt.inter.rr = 0.1,
+                   act.rate.sympt.inter.time = 15,
+                   network.lockdown.time = 15,
+                   ea.rate = 1/4.0,
+                   ar.rate = 1/5.0,
+                   eip.rate = 1/4.0,
+                   ipic.rate = 1/1.5,
+                   icr.rate = 1/3.5,
+                   pcr.sens = 0.8,
+                   dx.rate.sympt = c(rep(0, 15), rep(0.21430869, 5), rep(0.30194363, 5), rep(0.80075530, 100)),
+                   dx.rate.other = c(rep(0, 15), rep(0, 5), rep(0.09680617, 5), rep(0.21919574, 100)),
+                   allow.rescreen = FALSE,
+                   mort.rates = mr_vec,
+                   mort.dis.mult = 180,
+                   exit.rate.pass = 0,
+                   exit.rate.crew = 0,
+                   exit.elig.status = c("ip", "ic"),
+                   exit.require.dx = FALSE)
+
 # Initial conditions
 init <- init.net(e.num.pass = 8,
                  e.num.crew = 0)
@@ -100,9 +141,9 @@ names(df)
 
 df$dx.cuml
 summary(as.numeric(tail(sim$epi$dx.cuml, 1)))
-df$dx.pos.cuml
+df$dx.pos.cuml[c(16, 21, 26, 31)]
 max(pos.tests.day)
-pdf("analysis/Fig-Calibration1.pdf", height = 6, width = 10)
+# pdf("analysis/Fig-Calibration1.pdf", height = 6, width = 10)
 par(mar = c(3,3,2,1), mgp = c(2,1,0))
 plot(sim, y = c("se.cuml", "dx.pos.cuml"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,
      main = "Model Calibration", xlab = "Day", ylab = "Cumulative Count")
@@ -110,7 +151,7 @@ pal <- RColorBrewer::brewer.pal(3, "Set1")
 legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical Diagnoses"),
        lty = c(1,1,2), lwd = 2, col = c(pal[1:2], 1), bty = "n")
 lines(pos.tests.day, lty = 2, lwd = 2)
-dev.off()
+# dev.off()
 
 summary(colSums(sim$epi$d.ic.flow))
 
@@ -125,78 +166,3 @@ legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical 
        lty = c(1,1,2), lwd = 2, col = c(2, 4, 1), bty = "n")
 lines(c(0, diff(pos.tests.day)), lty = 2, lwd = 2)
 
-
-# ABC ---------------------------------------------------------------------
-
-install.packages("EasyABC")
-library("EasyABC")
-
-priors <- list(c("unif", 0.1, 0.4),
-               c("unif", 1, 2))
-
-control.sm <- control.net(nsteps = 31,
-                       nsims = 1, #100,
-                       ncores = 1, #4,
-                       initialize.FUN = init_covid_ship,
-                       aging.FUN = aging_covid_ship,
-                       departures.FUN = deaths_covid_ship,
-                       arrivals.FUN = NULL,
-                       edges_correct.FUN = NULL,
-                       resim_nets.FUN = resim_nets_covid_ship,
-                       infection.FUN = infect_covid_ship,
-                       recovery.FUN = progress_covid_ship,
-                       dx.FUN = dx_covid_ship,
-                       prevalence.FUN = prevalence_covid_ship,
-                       nwupdate.FUN = NULL,
-                       module.order = c("aging.FUN",
-                                        "departures.FUN",
-                                        "resim_nets.FUN",
-                                        "infection.FUN",
-                                        "recovery.FUN",
-                                        "dx.FUN",
-                                        "prevalence.FUN"),
-                       resimulate.network = TRUE,
-                       skip.check = TRUE,
-                       tergmLite = TRUE,
-                       verbose = FALSE)
-
-f <- function(x) {
-  params <- param
-
-  param$dx.rate.sympt = c(rep(0, 15), rep(x[1], 5), rep(x[2], 5), rep(x[3], 100))
-  # dx.rate.other = c(rep(0, 15), rep(0, 5), rep(0.07, 5), rep(0.19, 100))
-
-  inits <- init
-  controls <- control.sm
-  sim <- netsim(est, params, inits, controls)
-  sim <- mutate_epi(sim, se.cuml = cumsum(se.flow),
-                    dx.cuml = cumsum(nDx),
-                    dx.pos.cuml = cumsum(nDx.pos),
-                    totI = e.num + a.num + ip.num + ic.num)
-  df <- as.data.frame(sim)
-  out <- df$dx.pos.cuml
-  return(out)
-}
-
-f(c(0.2, 0.3, 0.8))
-
-priors <- list(c("unif", 0.15, 0.25),
-               c("unif", 0.25, 0.35),
-               c("unif", 0.75, 0.85))
-
-targets <- pos.tests.day
-
-fit1 <- ABC_rejection(model = f,
-                      prior = priors,
-                      nb_simul = 100,
-                      summary_stat_target = targets,
-                      tol = 0.05)
-
-fit2 <- ABC_sequential(method = "Lenormand",
-                       model = f,
-                       prior = priors,
-                       summary_stat_target = targets,
-                       nb_simul = 250,
-                       p_acc = 0.05,
-                       alpha = 0.25,
-                       progress_bar = TRUE)
