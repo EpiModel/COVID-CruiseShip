@@ -11,3 +11,5 @@ scp mox:/gscratch/csde/sjenness/cruise/data/*.rda analysis/dat/
 
 scp mox:/gscratch/csde/sjenness/COVID-CruiseShip/fit1.10k.norej.rda analysis/
 scp klone:/gscratch/csde/sjenness/COVID-CruiseShip/abc.smc.rds analysis/
+
+scp klone:/gscratch/csde/sjenness/COVID-CruiseShip/sim.sensitivityABC.*.rds analysis/

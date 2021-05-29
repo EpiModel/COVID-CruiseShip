@@ -53,3 +53,5 @@ analysis/*.csv
 
 analysis/dat/*.rda
 renv/
+analysis/sim.sensitivityABC.1k.rds
+analysis/sim.sensitivityABC.10k.rds

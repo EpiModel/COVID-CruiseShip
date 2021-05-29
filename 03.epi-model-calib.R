@@ -143,15 +143,15 @@ df$dx.cuml
 summary(as.numeric(tail(sim$epi$dx.cuml, 1)))
 df$dx.pos.cuml[c(16, 21, 26, 31)]
 max(pos.tests.day)
-# pdf("analysis/Fig-Calibration1.pdf", height = 6, width = 10)
-par(mar = c(3,3,2,1), mgp = c(2,1,0))
+pdf("analysis/Fig-Calibration1-Supp.pdf", height = 6, width = 10)
+par(mar = c(3,3,2,1), mgp = c(2,1,0), mfrow = c(1,2))
 plot(sim, y = c("se.cuml", "dx.pos.cuml"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,
-     main = "Model Calibration", xlab = "Day", ylab = "Cumulative Count")
+     main = "Calibration To Cumulative Diagnoses", xlab = "Day", ylab = "Cumulative Count")
 pal <- RColorBrewer::brewer.pal(3, "Set1")
 legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical Diagnoses"),
        lty = c(1,1,2), lwd = 2, col = c(pal[1:2], 1), bty = "n")
 lines(pos.tests.day, lty = 2, lwd = 2)
-# dev.off()
+
 
 summary(colSums(sim$epi$d.ic.flow))
 
@@ -159,10 +159,10 @@ sum(df$d.ic.flow)
 sum(df$se.flow)
 summary(colSums(sim$epi$se.flow))
 
-par(mar = c(3,3,2,1), mgp = c(2,1,0))
+
 plot(sim, y = c("se.flow", "nDx.pos"), qnts = 0.5, legend = FALSE, mean.smooth = TRUE,
-     main = "Model Calibration", xlab = "Day", ylab = "Cumulative Count", ylim = c(0, 200))
+     main = "Comparison to Raw Diagnoses", xlab = "Day", ylab = "Daily Count", ylim = c(0, 200))
 legend("topleft", legend = c("Fitted Diagnoses", "Fitted Incidence", "Empirical Diagnoses"),
        lty = c(1,1,2), lwd = 2, col = c(2, 4, 1), bty = "n")
 lines(c(0, diff(pos.tests.day)), lty = 2, lwd = 2)
-
+dev.off()

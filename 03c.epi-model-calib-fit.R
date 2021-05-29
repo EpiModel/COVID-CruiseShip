@@ -18,6 +18,8 @@ abc <- readRDS("abc.smc.rds")
 
 abc.mean <- colMeans(abc$param)
 
+apply(abc$param, 2, quantile, c(0.5, 0.025, 0.975))
+
 # Model parameters
 source("01.epi-params.R")
 param.fix <- param.net(inf.prob.pp = abc.mean[6],
@@ -129,7 +131,7 @@ init <- init.net(e.num.pass = 8,
 # Control settings
 # pkgload::load_all("~/git/EpiModelCOVID")
 control <- control.net(nsteps = 31,
-                       nsims = 1000, #100,
+                       nsims = 10000, #100,
                        ncores = parallel::detectCores()-1 , #4,
                        initialize.FUN = init_covid_ship,
                        aging.FUN = aging_covid_ship,
@@ -163,4 +165,4 @@ sim <- mutate_epi(sim, se.cuml = cumsum(se.flow),
 df <- as.data.frame(sim, out = "mean")
 names(df)
 
-saveRDS(sim, file = "sim.sensitivityABC.rds")
+saveRDS(sim, file = "sim.sensitivityABC.10k.rds")
